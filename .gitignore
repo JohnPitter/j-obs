@@ -92,3 +92,10 @@ htmlcov/
 *.pem
 *.key
 secrets/
+
+# Local development files
+CLAUDE.md
+DEVELOPMENT.md
+PUBLISHING.md
+TODO.md
+.playwright-mcp/
