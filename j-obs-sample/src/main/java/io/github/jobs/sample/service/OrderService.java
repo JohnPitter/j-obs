@@ -62,7 +62,6 @@ public class OrderService {
         }
     }
 
-    @Traced(name = "Create Order")
     public Order createOrder(String customerId, List<Order.OrderItem> items) {
         MDC.put("customerId", customerId);
         try {
@@ -95,7 +94,6 @@ public class OrderService {
         }
     }
 
-    @Traced(name = "Process Order")
     public Order processOrder(String orderId) {
         MDC.put("orderId", orderId);
         try {
@@ -137,7 +135,6 @@ public class OrderService {
         }
     }
 
-    @Traced(name = "Cancel Order")
     public Order cancelOrder(String orderId) {
         MDC.put("orderId", orderId);
         try {
@@ -189,7 +186,6 @@ public class OrderService {
         );
     }
 
-    @Traced(name = "Generate Sample Orders")
     public List<Order> generateSampleOrders(int count) {
         List<Order> generated = new ArrayList<>();
         String[] customers = {"customer-1", "customer-2", "customer-3", "customer-4", "customer-5"};

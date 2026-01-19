@@ -20,42 +20,171 @@ management:
       export:
         enabled: true
 
-# J-Obs Configuration
+# J-Obs Configuration - Full Feature Demo
 j-obs:
   enabled: true
   path: /j-obs
   check-interval: 5m
 
+  # Dashboard settings
   dashboard:
     refresh-interval: 5s
     theme: system
 
+  # Tracing - captures request journeys
   traces:
     enabled: true
     max-traces: 10000
     retention: 1h
     sample-rate: 1.0
 
+  # Logs - real-time streaming
   logs:
     enabled: true
     max-entries: 10000
     min-level: DEBUG
 
+  # Metrics - performance data
   metrics:
     enabled: true
     refresh-interval: 5000
     max-history-points: 360
+    cache-duration: 30s
 
+  # Health - component monitoring
   health:
     enabled: true
     max-history-entries: 100
 
   # Automatic instrumentation
   instrumentation:
-    traced-annotation: true      # Enable @Traced annotation
-    measured-annotation: true    # Enable @Measured annotation
-    http-tracing: true           # Auto-trace HTTP requests
-    auto-instrument: false       # Auto-instrument all @Service/@Repository (disabled by default)
+    traced-annotation: true
+    measured-annotation: true
+    http-tracing: true
+    auto-instrument: false
+
+  # Alert System - multi-provider notifications
+  alerts:
+    enabled: true
+    evaluation-interval: 15s
+
+    # Throttling prevents alert flooding
+    throttling:
+      rate-limit: 10
+      rate-period: 1m
+      cooldown: 5m
+      grouping: true
+      group-wait: 30s
+      max-group-size: 100
+      group-by-labels:
+        - alertName
+        - severity
+
+    # Alert Providers (configure with environment variables)
+    providers:
+      telegram:
+        enabled: false
+        bot-token: ${TELEGRAM_BOT_TOKEN:}
+        chat-ids: ${TELEGRAM_CHAT_IDS:}
+
+      slack:
+        enabled: false
+        webhook-url: ${SLACK_WEBHOOK_URL:}
+        channel: "#alerts"
+
+      teams:
+        enabled: false
+        webhook-url: ${TEAMS_WEBHOOK_URL:}
+
+      email:
+        enabled: false
+        host: ${SMTP_HOST:smtp.gmail.com}
+        port: ${SMTP_PORT:587}
+        username: ${SMTP_USERNAME:}
+        password: ${SMTP_PASSWORD:}
+        from: ${SMTP_FROM:alerts@example.com}
+        to: ${SMTP_TO:}
+        start-tls: true
+
+      webhook:
+        enabled: false
+        url: ${WEBHOOK_URL:}
+        headers:
+          Authorization: "Bearer ${WEBHOOK_TOKEN:}"
+
+  # SLO/SLI Tracking - Service Level Objectives
+  slos:
+    - name: api-availability
+      description: "API must be available 99.9% of the time"
+      sli:
+        type: availability
+        metric: http_server_requests_seconds_count
+        good-filter: "status=~'2..'"
+        total-filter: "status=~'...'"
+      objective: 99.9
+      window: 30d
+      alerts:
+        burn-rate-1h: 14.4
+        burn-rate-6h: 6.0
+        budget-remaining: 25
+
+    - name: api-latency-p99
+      description: "99% of requests must complete in under 500ms"
+      sli:
+        type: latency
+        metric: http_server_requests_seconds
+        threshold: 0.5
+        percentile: 99
+      objective: 99.0
+      window: 7d
+
+    - name: order-success-rate
+      description: "Order processing must succeed 99.5% of the time"
+      sli:
+        type: ratio
+        good-metric: orders_processed_total{status="success"}
+        total-metric: orders_processed_total
+      objective: 99.5
+      window: 7d
+
+  # Profiling - CPU, Memory, Thread analysis
+  profiling:
+    enabled: true
+    default-duration: 60s
+    max-duration: 300s
+    default-sampling-interval: 10ms
+
+  # SQL Analyzer - query analysis
+  sql-analyzer:
+    enabled: true
+    slow-query-threshold: 1s
+    very-slow-query-threshold: 5s
+    n-plus-one-threshold: 5
+    max-queries: 10000
+
+  # Anomaly Detection - automatic pattern detection
+  anomaly-detection:
+    enabled: true
+    baseline-window: 7d
+    min-samples: 100
+    sensitivity:
+      latency:
+        z-score-threshold: 3.0
+        min-increase-percent: 100
+      error-rate:
+        z-score-threshold: 2.5
+        min-absolute: 1
+      traffic:
+        z-score-threshold: 3.0
+
+  # Service Map - dependency visualization
+  service-map:
+    enabled: true
+    refresh-interval: 30s
+
+  # Security (disabled for demo)
+  security:
+    enabled: false
 
 # Logging
 logging:
