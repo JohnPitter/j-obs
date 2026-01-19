@@ -178,8 +178,16 @@
                         <span x-text="requestRate.avgPerMinute?.toFixed(1) || '0'"></span> req/min avg
                     </div>
                 </div>
-                <div class="h-48">
+                <div class="h-48 relative">
                     <canvas id="requestRateChart"></canvas>
+                    <div x-show="requestRate.totalRequests === 0" class="absolute inset-0 flex items-center justify-center text-slate-500">
+                        <div class="text-center">
+                            <svg class="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                            </svg>
+                            No request data yet
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -519,25 +527,44 @@
 
                 loadRequestRate() {
                     fetch('{{BASE_PATH}}/api/traces/request-rate?minutes=5')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error('Failed to load request rate');
+                            return res.json();
+                        })
                         .then(data => {
-                            this.requestRate = data;
+                            this.requestRate = data || { points: [], totalRequests: 0, avgPerMinute: 0 };
                             this.updateRequestRateChart(data.points || []);
                         })
-                        .catch(() => {});
+                        .catch(err => {
+                            console.error('Request rate error:', err);
+                            this.requestRate = { points: [], totalRequests: 0, avgPerMinute: 0 };
+                        });
                 },
 
                 updateRequestRateChart(points) {
-                    if (!this.requestRateChart) return;
+                    if (!this.requestRateChart) {
+                        console.warn('Request rate chart not initialized');
+                        return;
+                    }
 
+                    // Generate labels and data from points
                     const labels = points.map(p => {
                         const date = new Date(p.timestamp);
                         return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
                     });
                     const data = points.map(p => p.count);
 
+                    // Update chart data
                     this.requestRateChart.data.labels = labels;
                     this.requestRateChart.data.datasets[0].data = data;
+
+                    // Ensure y-axis shows at least 0-10 when there's no data
+                    if (data.length === 0 || Math.max(...data) === 0) {
+                        this.requestRateChart.options.scales.y.max = 10;
+                    } else {
+                        this.requestRateChart.options.scales.y.max = undefined;
+                    }
+
                     this.requestRateChart.update('none');
                 },
 
