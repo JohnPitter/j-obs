@@ -416,6 +416,9 @@
     </div>
 
     <script>
+        // Store chart outside Alpine's reactive scope to avoid reactivity issues
+        let _requestRateChart = null;
+
         function dashboard() {
             return {
                 refreshInterval: 5,
@@ -428,7 +431,6 @@
                 requestRate: { points: [], totalRequests: 0, avgPerMinute: 0 },
                 topEndpoints: [],
                 maxEndpointLatency: 100,
-                requestRateChart: null,
 
                 init() {
                     this.initChart();
@@ -437,10 +439,25 @@
                 },
 
                 initChart() {
-                    const ctx = document.getElementById('requestRateChart')?.getContext('2d');
+                    const canvas = document.getElementById('requestRateChart');
+                    if (!canvas) return;
+
+                    // Destroy existing chart if any
+                    if (_requestRateChart) {
+                        _requestRateChart.destroy();
+                        _requestRateChart = null;
+                    }
+
+                    // Also check for any chart instance on this canvas
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+
+                    const ctx = canvas.getContext('2d');
                     if (!ctx) return;
 
-                    this.requestRateChart = new Chart(ctx, {
+                    _requestRateChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: [],
@@ -542,7 +559,7 @@
                 },
 
                 updateRequestRateChart(points) {
-                    if (!this.requestRateChart) {
+                    if (!_requestRateChart) {
                         console.warn('Request rate chart not initialized');
                         return;
                     }
@@ -555,17 +572,17 @@
                     const data = points.map(p => p.count);
 
                     // Update chart data
-                    this.requestRateChart.data.labels = labels;
-                    this.requestRateChart.data.datasets[0].data = data;
+                    _requestRateChart.data.labels = labels;
+                    _requestRateChart.data.datasets[0].data = data;
 
                     // Ensure y-axis shows at least 0-10 when there's no data
                     if (data.length === 0 || Math.max(...data) === 0) {
-                        this.requestRateChart.options.scales.y.max = 10;
+                        _requestRateChart.options.scales.y.max = 10;
                     } else {
-                        this.requestRateChart.options.scales.y.max = undefined;
+                        _requestRateChart.options.scales.y.max = undefined;
                     }
 
-                    this.requestRateChart.update('none');
+                    _requestRateChart.update('none');
                 },
 
                 loadTopEndpoints() {
