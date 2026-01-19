@@ -765,8 +765,129 @@ j-obs:
 ## Requirements
 
 - **Java**: 17 or higher
-- **Spring Boot**: 3.0 or higher
+- **Spring Boot**: 3.2 or higher
 - **Dependencies**: OpenTelemetry, Micrometer, Actuator
+
+---
+
+## Compatibility Matrix
+
+| Spring Boot | Java | Status | Notes |
+|-------------|------|--------|-------|
+| 3.4.x | 17, 21 | ✅ Tested | Full support including test environments |
+| 3.3.x | 17, 21 | ✅ Compatible | |
+| 3.2.x | 17, 21 | ✅ Tested | Primary development version |
+| 3.1.x | 17 | ⚠️ Should work | Not officially tested |
+| 3.0.x | 17 | ⚠️ Should work | Not officially tested |
+
+### Optional Dependencies
+
+| Dependency | Required | Purpose |
+|------------|----------|---------|
+| `spring-boot-starter-websocket` | No | Real-time log streaming |
+| `spring-boot-starter-actuator` | Yes | Health endpoints |
+| `opentelemetry-api` | Yes | Tracing support |
+| `opentelemetry-sdk` | Yes | Trace collection |
+| `micrometer-core` | Yes | Metrics support |
+| `logback-classic` | No | Log capture (falls back to JUL) |
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### "WebSocketConfigurer not found" in tests
+
+**Cause:** Test environment using `MockServletContext` doesn't have WebSocket support.
+
+**Solution:** This was fixed in v1.0.1. Update to the latest version:
+```xml
+<dependency>
+    <groupId>io.github.j-obs</groupId>
+    <artifactId>j-obs-spring-boot-starter</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+
+#### "POM invalid, transitive dependencies not available"
+
+**Cause:** Maven can't resolve the parent POM from GitHub Packages.
+
+**Solution:** Add the GitHub Packages repository to your `pom.xml`:
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
+    </repository>
+</repositories>
+```
+
+Or install locally:
+```bash
+git clone https://github.com/JohnPitter/j-obs.git
+cd j-obs
+mvn clean install -DskipTests
+```
+
+#### Dashboard shows "Requirements not met"
+
+**Cause:** Missing required dependencies.
+
+**Solution:** Ensure all required dependencies are on the classpath:
+```xml
+<dependencies>
+    <dependency>
+        <groupId>io.github.j-obs</groupId>
+        <artifactId>j-obs-spring-boot-starter</artifactId>
+        <version>1.0.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-api</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-sdk</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-core</artifactId>
+    </dependency>
+</dependencies>
+```
+
+#### Real-time logs not working
+
+**Cause:** WebSocket not available or blocked by proxy/firewall.
+
+**Solution:**
+1. Add WebSocket dependency:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-websocket</artifactId>
+</dependency>
+```
+2. Use the REST API fallback at `/j-obs/api/logs`
+
+#### Conflict with existing Micrometer/OpenTelemetry configuration
+
+**Cause:** J-Obs creates its own beans which may conflict with existing setup.
+
+**Solution:** J-Obs uses `@ConditionalOnMissingBean` for all its beans. Your existing beans take precedence. If you need to customize:
+```yaml
+j-obs:
+  metrics:
+    enabled: false  # Use your own metrics setup
+  traces:
+    enabled: false  # Use your own tracing setup
+```
 
 ---
 
