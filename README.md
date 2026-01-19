@@ -110,7 +110,25 @@ On-demand CPU, Memory, and Thread profiling to identify performance bottlenecks.
 
 ## Quick Start
 
-### 1. Add Dependency
+### Option A: Install from Source (Local)
+
+If the library is not yet published to Maven Central, you can install it locally:
+
+```bash
+# Clone the repository
+git clone https://github.com/JohnPitter/j-obs.git
+cd j-obs
+
+# Build and install to local Maven repository
+mvn clean install -DskipTests
+
+# Or with tests
+mvn clean install
+```
+
+After installation, the artifacts will be available in your local `~/.m2/repository` and you can use them in any project on your machine.
+
+### Option B: Add Dependency from Maven Central
 
 ```xml
 <dependency>
@@ -120,7 +138,43 @@ On-demand CPU, Memory, and Thread profiling to identify performance bottlenecks.
 </dependency>
 ```
 
-### 2. Add Required Dependencies
+### Option C: Use GitHub Packages
+
+Add the GitHub Packages repository to your `pom.xml`:
+
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
+    </repository>
+</repositories>
+```
+
+Then add the dependency:
+
+```xml
+<dependency>
+    <groupId>io.github.j-obs</groupId>
+    <artifactId>j-obs-spring-boot-starter</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+> **Note:** GitHub Packages requires authentication. Add your GitHub credentials to `~/.m2/settings.xml`:
+> ```xml
+> <servers>
+>     <server>
+>         <id>github</id>
+>         <username>YOUR_GITHUB_USERNAME</username>
+>         <password>YOUR_GITHUB_TOKEN</password>
+>     </server>
+> </servers>
+> ```
+
+### Required Dependencies
+
+After installing J-Obs, add these required dependencies to your project:
 
 ```xml
 <!-- Spring Boot Actuator -->
@@ -157,7 +211,7 @@ On-demand CPU, Memory, and Thread profiling to identify performance bottlenecks.
 </dependency>
 ```
 
-### 3. Configure Actuator
+### Configure Actuator
 
 ```yaml
 management:
@@ -170,7 +224,7 @@ management:
       show-details: always
 ```
 
-### 4. Access Dashboard
+### Access Dashboard
 
 ```
 http://localhost:8080/j-obs
