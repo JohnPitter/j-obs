@@ -1,5 +1,6 @@
 package io.github.jobs.sample.service;
 
+import io.github.jobs.annotation.Observable;
 import io.github.jobs.annotation.Traced;
 import io.github.jobs.sample.model.Order;
 import io.github.jobs.sample.repository.OrderRepository;
@@ -26,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * </pre>
  */
 @Service
+@Observable
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
