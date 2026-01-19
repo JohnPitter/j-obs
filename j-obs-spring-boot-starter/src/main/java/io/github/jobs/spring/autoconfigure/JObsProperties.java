@@ -3,6 +3,10 @@ package io.github.jobs.spring.autoconfigure;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration properties for J-Obs.
@@ -761,7 +765,7 @@ public class JObsProperties {
              * Labels to use for grouping alerts.
              * Alerts with the same values for these labels will be grouped together.
              */
-            private java.util.List<String> groupByLabels = java.util.List.of("service", "instance");
+            private List<String> groupByLabels = List.of("service", "instance");
 
             /**
              * Interval for repeating unresolved alerts.
@@ -816,11 +820,11 @@ public class JObsProperties {
                 this.maxGroupSize = maxGroupSize;
             }
 
-            public java.util.List<String> getGroupByLabels() {
+            public List<String> getGroupByLabels() {
                 return groupByLabels;
             }
 
-            public void setGroupByLabels(java.util.List<String> groupByLabels) {
+            public void setGroupByLabels(List<String> groupByLabels) {
                 this.groupByLabels = groupByLabels;
             }
 
@@ -892,7 +896,7 @@ public class JObsProperties {
 
             private boolean enabled = false;
             private String botToken;
-            private java.util.List<String> chatIds = new java.util.ArrayList<>();
+            private List<String> chatIds = new ArrayList<>();
 
             public boolean isEnabled() {
                 return enabled;
@@ -910,11 +914,11 @@ public class JObsProperties {
                 this.botToken = botToken;
             }
 
-            public java.util.List<String> getChatIds() {
+            public List<String> getChatIds() {
                 return chatIds;
             }
 
-            public void setChatIds(java.util.List<String> chatIds) {
+            public void setChatIds(List<String> chatIds) {
                 this.chatIds = chatIds;
             }
 
@@ -1001,7 +1005,7 @@ public class JObsProperties {
             private String username;
             private String password;
             private String from;
-            private java.util.List<String> to = new java.util.ArrayList<>();
+            private List<String> to = new ArrayList<>();
             private boolean startTls = true;
             private boolean ssl = false;
 
@@ -1053,11 +1057,11 @@ public class JObsProperties {
                 this.from = from;
             }
 
-            public java.util.List<String> getTo() {
+            public List<String> getTo() {
                 return to;
             }
 
-            public void setTo(java.util.List<String> to) {
+            public void setTo(List<String> to) {
                 this.to = to;
             }
 
@@ -1089,7 +1093,7 @@ public class JObsProperties {
 
             private boolean enabled = false;
             private String url;
-            private java.util.Map<String, String> headers = new java.util.HashMap<>();
+            private Map<String, String> headers = new HashMap<>();
             private String template;
             private String method = "POST";
 
@@ -1109,11 +1113,11 @@ public class JObsProperties {
                 this.url = url;
             }
 
-            public java.util.Map<String, String> getHeaders() {
+            public Map<String, String> getHeaders() {
                 return headers;
             }
 
-            public void setHeaders(java.util.Map<String, String> headers) {
+            public void setHeaders(Map<String, String> headers) {
                 this.headers = headers;
             }
 
@@ -1192,7 +1196,7 @@ public class JObsProperties {
         /**
          * Patterns to ignore (regex).
          */
-        private java.util.List<String> ignorePatterns = new java.util.ArrayList<>();
+        private List<String> ignorePatterns = new ArrayList<>();
 
         public boolean isEnabled() {
             return enabled;
@@ -1266,11 +1270,11 @@ public class JObsProperties {
             this.analysisWindow = analysisWindow;
         }
 
-        public java.util.List<String> getIgnorePatterns() {
+        public List<String> getIgnorePatterns() {
             return ignorePatterns;
         }
 
-        public void setIgnorePatterns(java.util.List<String> ignorePatterns) {
+        public void setIgnorePatterns(List<String> ignorePatterns) {
             this.ignorePatterns = ignorePatterns;
         }
     }

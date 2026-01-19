@@ -1,5 +1,6 @@
 package io.github.jobs.domain.metric;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -80,7 +81,7 @@ public record MetricQuery(
         private String namePattern;
         private MetricType type;
         private String category;
-        private java.util.HashMap<String, String> tags = new java.util.HashMap<>();
+        private HashMap<String, String> tags = new HashMap<>();
         private int limit = 100;
         private int offset = 0;
 

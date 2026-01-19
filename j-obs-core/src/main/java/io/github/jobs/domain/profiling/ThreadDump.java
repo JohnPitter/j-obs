@@ -1,6 +1,8 @@
 package io.github.jobs.domain.profiling;
 
+import java.lang.management.ThreadInfo;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -141,16 +143,16 @@ public record ThreadDump(
         /**
          * Creates a ThreadSnapshot from a ThreadInfo.
          */
-        public static ThreadSnapshot from(java.lang.management.ThreadInfo info) {
-            List<CpuSample.StackFrame> frames = java.util.Arrays.stream(info.getStackTrace())
+        public static ThreadSnapshot from(ThreadInfo info) {
+            List<CpuSample.StackFrame> frames = Arrays.stream(info.getStackTrace())
                     .map(CpuSample.StackFrame::from)
                     .toList();
 
-            List<String> monitors = java.util.Arrays.stream(info.getLockedMonitors())
+            List<String> monitors = Arrays.stream(info.getLockedMonitors())
                     .map(m -> m.getClassName() + "@" + Integer.toHexString(m.getIdentityHashCode()))
                     .toList();
 
-            List<String> synchronizers = java.util.Arrays.stream(info.getLockedSynchronizers())
+            List<String> synchronizers = Arrays.stream(info.getLockedSynchronizers())
                     .map(s -> s.getClassName() + "@" + Integer.toHexString(System.identityHashCode(s)))
                     .toList();
 

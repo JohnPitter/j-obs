@@ -1,6 +1,7 @@
 package io.github.jobs.domain.health;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -121,7 +122,7 @@ public record HealthComponent(
         private String name;
         private String displayName;
         private HealthStatus status = HealthStatus.UNKNOWN;
-        private final java.util.HashMap<String, Object> details = new java.util.HashMap<>();
+        private final HashMap<String, Object> details = new HashMap<>();
         private Instant checkedAt;
         private String error;
 

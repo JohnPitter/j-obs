@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -231,7 +232,7 @@ public class TraceApiController {
 
     private String normalizeUrl(String url) {
         try {
-            java.net.URL parsed = new java.net.URL(url);
+            URL parsed = new URL(url);
             String path = parsed.getPath();
             // Replace numeric IDs with {id}
             return path.replaceAll("/\\d+", "/{id}");

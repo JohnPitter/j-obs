@@ -1,6 +1,9 @@
 package io.github.jobs.domain.sql;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents a captured SQL query with execution metadata.
@@ -157,13 +160,13 @@ public record SqlQuery(
         String[] words1 = normalizedStatement.split("\\s+");
         String[] words2 = other.normalizedStatement.split("\\s+");
 
-        java.util.Set<String> set1 = new java.util.HashSet<>(java.util.Arrays.asList(words1));
-        java.util.Set<String> set2 = new java.util.HashSet<>(java.util.Arrays.asList(words2));
+        Set<String> set1 = new HashSet<>(Arrays.asList(words1));
+        Set<String> set2 = new HashSet<>(Arrays.asList(words2));
 
-        java.util.Set<String> intersection = new java.util.HashSet<>(set1);
+        Set<String> intersection = new HashSet<>(set1);
         intersection.retainAll(set2);
 
-        java.util.Set<String> union = new java.util.HashSet<>(set1);
+        Set<String> union = new HashSet<>(set1);
         union.addAll(set2);
 
         if (union.isEmpty()) return 0.0;

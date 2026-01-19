@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.management.*;
+import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -148,7 +149,7 @@ public class ToolsApiController {
 
     private String extractHost(String url) {
         try {
-            java.net.URL u = new java.net.URL(url);
+            URL u = new URL(url);
             return u.getHost();
         } catch (Exception e) {
             return url;

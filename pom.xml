@@ -7,7 +7,7 @@
 
     <groupId>io.github.j-obs</groupId>
     <artifactId>j-obs-parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>pom</packaging>
 
     <name>J-Obs Parent</name>
@@ -24,11 +24,21 @@
 
     <developers>
         <developer>
-            <id>j-obs</id>
-            <name>J-Obs Team</name>
-            <url>https://github.com/j-obs</url>
+            <id>JohnPitter</id>
+            <name>João Pitter</name>
+            <email>joaopitter@users.noreply.github.com</email>
+            <url>https://github.com/JohnPitter</url>
+            <roles>
+                <role>developer</role>
+                <role>maintainer</role>
+            </roles>
         </developer>
     </developers>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/JohnPitter/j-obs/issues</url>
+    </issueManagement>
 
     <scm>
         <connection>scm:git:git://github.com/JohnPitter/j-obs.git</connection>
@@ -223,13 +233,14 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.4.0</version>
+                        <version>0.7.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <tokenAuth>true</tokenAuth>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
+                            <checksums>required</checksums>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -243,5 +254,10 @@
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
         </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
+        </snapshotRepository>
     </distributionManagement>
 </project>

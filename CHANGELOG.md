@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-01-19
+
+### Added
+- **Maven Central Support** - Library can now be published to Maven Central
+  - Configured `central-publishing-maven-plugin` 0.7.0
+  - Added GPG signing in release profile
+  - Updated CI/CD workflow with Maven Central publishing stage
+  - Added comprehensive `PUBLISHING.md` guide
+- **Improved Developer Metadata** - Enhanced POM with complete developer and issue management info
+
+### Changed
+- **Code Style** - Replaced inline fully qualified class names with proper imports
+  - Fixed across 13 files in both `j-obs-core` and `j-obs-spring-boot-starter`
+  - Improves code readability and follows Java conventions
+
+### Fixed
+- **Sample Module Exclusion** - `j-obs-sample` is now properly excluded from deployment
+  - Added `maven-deploy-plugin` skip configuration
+  - Added `central-publishing-maven-plugin` skip configuration
+
 ## [1.0.1] - 2026-01-19
 
 ### Fixed

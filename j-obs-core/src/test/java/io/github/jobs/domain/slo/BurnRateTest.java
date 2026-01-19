@@ -3,6 +3,7 @@ package io.github.jobs.domain.slo;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,7 +31,7 @@ class BurnRateTest {
 
     @Test
     void shouldIdentifySafeBurnRate() {
-        BurnRate safe = new BurnRate(0.5, Duration.ofHours(1), Duration.ofDays(30), java.time.Instant.now());
+        BurnRate safe = new BurnRate(0.5, Duration.ofHours(1), Duration.ofDays(30), Instant.now());
         assertTrue(safe.isSafe());
         assertFalse(safe.isElevated());
         assertFalse(safe.isHigh());
@@ -39,7 +40,7 @@ class BurnRateTest {
 
     @Test
     void shouldIdentifyElevatedBurnRate() {
-        BurnRate elevated = new BurnRate(1.5, Duration.ofHours(1), Duration.ofDays(10), java.time.Instant.now());
+        BurnRate elevated = new BurnRate(1.5, Duration.ofHours(1), Duration.ofDays(10), Instant.now());
         assertFalse(elevated.isSafe());
         assertTrue(elevated.isElevated());
         assertFalse(elevated.isHigh());
@@ -48,7 +49,7 @@ class BurnRateTest {
 
     @Test
     void shouldIdentifyHighBurnRate() {
-        BurnRate high = new BurnRate(5.0, Duration.ofHours(1), Duration.ofDays(5), java.time.Instant.now());
+        BurnRate high = new BurnRate(5.0, Duration.ofHours(1), Duration.ofDays(5), Instant.now());
         assertFalse(high.isSafe());
         assertFalse(high.isElevated());
         assertTrue(high.isHigh());
@@ -57,7 +58,7 @@ class BurnRateTest {
 
     @Test
     void shouldIdentifyCriticalBurnRate() {
-        BurnRate critical = new BurnRate(15.0, Duration.ofHours(1), Duration.ofDays(1), java.time.Instant.now());
+        BurnRate critical = new BurnRate(15.0, Duration.ofHours(1), Duration.ofDays(1), Instant.now());
         assertFalse(critical.isSafe());
         assertFalse(critical.isElevated());
         assertFalse(critical.isHigh());
@@ -66,15 +67,15 @@ class BurnRateTest {
 
     @Test
     void shouldReturnCorrectSeverity() {
-        assertEquals("safe", new BurnRate(0.5, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now()).severity());
-        assertEquals("elevated", new BurnRate(1.5, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now()).severity());
-        assertEquals("high", new BurnRate(5.0, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now()).severity());
-        assertEquals("critical", new BurnRate(15.0, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now()).severity());
+        assertEquals("safe", new BurnRate(0.5, Duration.ofHours(1), Duration.ZERO, Instant.now()).severity());
+        assertEquals("elevated", new BurnRate(1.5, Duration.ofHours(1), Duration.ZERO, Instant.now()).severity());
+        assertEquals("high", new BurnRate(5.0, Duration.ofHours(1), Duration.ZERO, Instant.now()).severity());
+        assertEquals("critical", new BurnRate(15.0, Duration.ofHours(1), Duration.ZERO, Instant.now()).severity());
     }
 
     @Test
     void shouldFormatBurnRate() {
-        BurnRate rate = new BurnRate(2.5, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now());
+        BurnRate rate = new BurnRate(2.5, Duration.ofHours(1), Duration.ZERO, Instant.now());
         assertEquals("2.5x", rate.format());
     }
 
@@ -87,7 +88,7 @@ class BurnRateTest {
 
     @Test
     void shouldFormatProjectedExhaustion() {
-        BurnRate rate = new BurnRate(1.0, Duration.ofHours(1), Duration.ofHours(5), java.time.Instant.now());
+        BurnRate rate = new BurnRate(1.0, Duration.ofHours(1), Duration.ofHours(5), Instant.now());
         String formatted = rate.formatProjectedExhaustion();
         assertNotNull(formatted);
         assertTrue(formatted.contains("5h"));
@@ -95,7 +96,7 @@ class BurnRateTest {
 
     @Test
     void shouldHandleZeroProjectedExhaustion() {
-        BurnRate rate = new BurnRate(1.0, Duration.ofHours(1), Duration.ZERO, java.time.Instant.now());
+        BurnRate rate = new BurnRate(1.0, Duration.ofHours(1), Duration.ZERO, Instant.now());
         assertEquals("N/A", rate.formatProjectedExhaustion());
     }
 }

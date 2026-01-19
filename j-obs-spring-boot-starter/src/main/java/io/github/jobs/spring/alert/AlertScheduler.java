@@ -4,6 +4,7 @@ import io.github.jobs.application.AlertEventRepository;
 import io.github.jobs.domain.alert.Alert;
 import io.github.jobs.domain.alert.AlertEvaluationResult;
 import io.github.jobs.domain.alert.AlertEvent;
+import io.github.jobs.domain.alert.AlertNotificationResult;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +178,7 @@ public class AlertScheduler {
         }
     }
 
-    private void logDispatchResults(AlertEvent event, List<io.github.jobs.domain.alert.AlertNotificationResult> results) {
+    private void logDispatchResults(AlertEvent event, List<AlertNotificationResult> results) {
         long successCount = results.stream()
                 .filter(r -> r.success())
                 .count();

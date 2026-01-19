@@ -1,6 +1,7 @@
 package io.github.jobs.domain.metric;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -121,8 +122,8 @@ public record MetricValue(
         private Instant timestamp = Instant.now();
         private double value;
         private String unit;
-        private java.util.HashMap<String, Double> percentiles = new java.util.HashMap<>();
-        private java.util.HashMap<String, Double> statistics = new java.util.HashMap<>();
+        private HashMap<String, Double> percentiles = new HashMap<>();
+        private HashMap<String, Double> statistics = new HashMap<>();
 
         public Builder timestamp(Instant timestamp) {
             this.timestamp = timestamp;

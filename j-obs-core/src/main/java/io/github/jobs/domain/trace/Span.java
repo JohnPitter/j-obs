@@ -3,6 +3,7 @@ package io.github.jobs.domain.trace;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -278,7 +279,7 @@ public final class Span {
 
         public Builder attribute(String key, String value) {
             if (this.attributes == null) {
-                this.attributes = new java.util.HashMap<>();
+                this.attributes = new HashMap<>();
             }
             this.attributes.put(key, value);
             return this;

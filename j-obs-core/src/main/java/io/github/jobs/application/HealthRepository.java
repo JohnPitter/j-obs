@@ -2,7 +2,10 @@ package io.github.jobs.application;
 
 import io.github.jobs.domain.health.HealthCheckResult;
 import io.github.jobs.domain.health.HealthComponent;
+import io.github.jobs.domain.health.HealthStatus;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,19 +37,19 @@ public interface HealthRepository {
     /**
      * Gets the timestamp of the last health check.
      */
-    java.time.Instant getLastCheckTime();
+    Instant getLastCheckTime();
 
     /**
      * Gets health history for a component (if available).
      */
-    List<HealthHistoryEntry> getHistory(String componentName, java.time.Duration duration);
+    List<HealthHistoryEntry> getHistory(String componentName, Duration duration);
 
     /**
      * Represents a historical health check entry.
      */
     record HealthHistoryEntry(
-            java.time.Instant timestamp,
-            io.github.jobs.domain.health.HealthStatus status,
+            Instant timestamp,
+            HealthStatus status,
             String error
     ) {}
 }

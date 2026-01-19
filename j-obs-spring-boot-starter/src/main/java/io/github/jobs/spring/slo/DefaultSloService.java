@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Default implementation of SloService.
@@ -166,7 +167,7 @@ public class DefaultSloService implements SloService {
             int percentile = sli.percentile() != null ? sli.percentile() : 99;
 
             // Get the percentile value
-            double percentileValue = timer.percentile(percentile / 100.0, java.util.concurrent.TimeUnit.MILLISECONDS);
+            double percentileValue = timer.percentile(percentile / 100.0, TimeUnit.MILLISECONDS);
 
             // Calculate what percentage of requests meet the threshold
             // This is an approximation - in reality we'd need histogram buckets
