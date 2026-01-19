@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - Anomaly Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="anomalyApp()" x-init="init()">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a th:href="${basePath}" class="flex items-center space-x-2">
+                        <span class="text-xl font-bold text-indigo-600">J-Obs</span>
+                    </a>
+                    <div class="hidden md:flex items-center space-x-4 ml-10">
+                        <a th:href="${basePath}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a th:href="${basePath + '/traces'}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Traces</a>
+                        <a th:href="${basePath + '/logs'}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Logs</a>
+                        <a th:href="${basePath + '/metrics'}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Metrics</a>
+                        <a th:href="${basePath + '/sql'}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">SQL Analyzer</a>
+                        <a th:href="${basePath + '/anomalies'}" class="text-indigo-600 border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium">Anomalies</a>
+                        <a th:href="${basePath + '/alerts'}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Alerts</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @click="runDetection()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                            :disabled="detecting">
+                        <span x-show="!detecting">Run Detection</span>
+                        <span x-show="detecting">Detecting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Anomaly Detection</h1>
+            <p class="text-gray-600 mt-1">Automatic detection of abnormal behavior patterns</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Total Anomalies</div>
+                <div class="mt-1 text-3xl font-semibold text-gray-900" x-text="stats.totalAnomalies || 0"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Active</div>
+                <div class="mt-1 text-3xl font-semibold text-red-600" x-text="stats.activeAnomalies || 0"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Critical</div>
+                <div class="mt-1 text-3xl font-semibold text-red-600" x-text="stats.criticalAnomalies || 0"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Resolved</div>
+                <div class="mt-1 text-3xl font-semibold text-green-600" x-text="stats.resolvedAnomalies || 0"></div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow mb-6 p-4">
+            <div class="flex flex-wrap gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select x-model="filter.status" @change="loadAnomalies()" class="border rounded-md px-3 py-2 text-sm">
+                        <option value="">All</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="ACKNOWLEDGED">Acknowledged</option>
+                        <option value="RESOLVED">Resolved</option>
+                        <option value="IGNORED">Ignored</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select x-model="filter.type" @change="loadAnomalies()" class="border rounded-md px-3 py-2 text-sm">
+                        <option value="">All Types</option>
+                        <option value="LATENCY_SPIKE">Latency Spike</option>
+                        <option value="ERROR_RATE_SPIKE">Error Rate Spike</option>
+                        <option value="TRAFFIC_SPIKE">Traffic Spike</option>
+                        <option value="TRAFFIC_DROP">Traffic Drop</option>
+                    </select>
+                </div>
+                <div class="flex-1"></div>
+                <div class="flex items-end">
+                    <button @click="clearResolved()" class="text-sm text-gray-600 hover:text-gray-900">
+                        Clear Resolved
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomalies List -->
+        <div class="space-y-4">
+            <template x-for="anomaly in filteredAnomalies" :key="anomaly.id">
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-3">
+                                <!-- Severity Icon -->
+                                <div :class="anomaly.type.includes('SPIKE') || anomaly.type.includes('DROP') ? 'text-red-500' : 'text-amber-500'">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900" x-text="formatType(anomaly.type)"></h3>
+                                    <p class="text-sm text-gray-500" x-text="anomaly.endpoint || 'Global'"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span :class="getStatusClass(anomaly.status)"
+                                      class="px-2 py-1 text-xs font-medium rounded-full"
+                                      x-text="anomaly.status"></span>
+                                <span class="text-sm text-gray-500" x-text="formatTime(anomaly.detectedAt)"></span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 rounded p-3">
+                                <div class="text-xs text-gray-500">Baseline</div>
+                                <div class="text-lg font-semibold" x-text="formatValue(anomaly.baselineValue, anomaly.metric)"></div>
+                            </div>
+                            <div class="bg-gray-50 rounded p-3">
+                                <div class="text-xs text-gray-500">Current</div>
+                                <div class="text-lg font-semibold text-red-600" x-text="formatValue(anomaly.currentValue, anomaly.metric)"></div>
+                            </div>
+                            <div class="bg-gray-50 rounded p-3">
+                                <div class="text-xs text-gray-500">Change</div>
+                                <div class="text-lg font-semibold" :class="anomaly.percentageChange > 0 ? 'text-red-600' : 'text-green-600'">
+                                    <span x-text="(anomaly.percentageChange > 0 ? '+' : '') + anomaly.percentageChange.toFixed(1) + '%'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Possible Causes -->
+                        <template x-if="anomaly.possibleCauses && anomaly.possibleCauses.length > 0">
+                            <div class="mt-4">
+                                <div class="text-sm font-medium text-gray-700 mb-2">Possible Causes:</div>
+                                <ul class="space-y-1">
+                                    <template x-for="cause in anomaly.possibleCauses" :key="cause.description">
+                                        <li class="flex items-center text-sm text-gray-600">
+                                            <span class="w-2 h-2 rounded-full mr-2"
+                                                  :class="cause.confidence === 'HIGH' ? 'bg-green-500' : cause.confidence === 'MEDIUM' ? 'bg-amber-500' : 'bg-gray-400'"></span>
+                                            <span x-text="cause.description"></span>
+                                            <span class="ml-2 text-xs text-gray-400" x-text="'(' + cause.confidence + ')'"></span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+
+                        <!-- Actions -->
+                        <div class="mt-4 flex justify-end space-x-2" x-show="anomaly.status === 'ACTIVE'">
+                            <button @click="acknowledgeAnomaly(anomaly.id)"
+                                    class="px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 rounded-md hover:bg-amber-100">
+                                Acknowledge
+                            </button>
+                            <button @click="resolveAnomaly(anomaly.id)"
+                                    class="px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100">
+                                Resolve
+                            </button>
+                            <button @click="ignoreAnomaly(anomaly.id)"
+                                    class="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100">
+                                Ignore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Empty State -->
+            <div x-show="filteredAnomalies.length === 0" class="bg-white rounded-lg shadow p-8 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No anomalies detected</h3>
+                <p class="mt-1 text-sm text-gray-500">The system is operating normally.</p>
+                <button @click="runDetection()" class="mt-4 text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                    Run detection now
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script th:inline="javascript">
+        const basePath = /*[[${basePath}]]*/ '/j-obs';
+
+        function anomalyApp() {
+            return {
+                anomalies: [],
+                stats: /*[[${stats}]]*/ {},
+                detecting: false,
+                filter: {
+                    status: '',
+                    type: ''
+                },
+
+                init() {
+                    this.loadAnomalies();
+                    this.loadStats();
+                    // Auto-refresh every 30 seconds
+                    setInterval(() => {
+                        this.loadAnomalies();
+                        this.loadStats();
+                    }, 30000);
+                },
+
+                async loadAnomalies() {
+                    try {
+                        let url = `${basePath}/api/anomalies`;
+                        if (this.filter.status) {
+                            url += `?status=${this.filter.status}`;
+                        }
+                        const response = await fetch(url);
+                        this.anomalies = await response.json();
+                    } catch (error) {
+                        console.error('Error loading anomalies:', error);
+                    }
+                },
+
+                async loadStats() {
+                    try {
+                        const response = await fetch(`${basePath}/api/anomalies/stats`);
+                        this.stats = await response.json();
+                    } catch (error) {
+                        console.error('Error loading stats:', error);
+                    }
+                },
+
+                async runDetection() {
+                    this.detecting = true;
+                    try {
+                        await fetch(`${basePath}/api/anomalies/detect?window=5m`, { method: 'POST' });
+                        await this.loadAnomalies();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error('Error running detection:', error);
+                    } finally {
+                        this.detecting = false;
+                    }
+                },
+
+                async acknowledgeAnomaly(id) {
+                    await this.updateStatus(id, 'acknowledge');
+                },
+
+                async resolveAnomaly(id) {
+                    await this.updateStatus(id, 'resolve');
+                },
+
+                async ignoreAnomaly(id) {
+                    await this.updateStatus(id, 'ignore');
+                },
+
+                async updateStatus(id, action) {
+                    try {
+                        await fetch(`${basePath}/api/anomalies/${id}/${action}`, { method: 'POST' });
+                        await this.loadAnomalies();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error('Error updating status:', error);
+                    }
+                },
+
+                async clearResolved() {
+                    try {
+                        await fetch(`${basePath}/api/anomalies/resolved`, { method: 'DELETE' });
+                        await this.loadAnomalies();
+                        await this.loadStats();
+                    } catch (error) {
+                        console.error('Error clearing resolved:', error);
+                    }
+                },
+
+                get filteredAnomalies() {
+                    let result = this.anomalies;
+                    if (this.filter.type) {
+                        result = result.filter(a => a.type === this.filter.type);
+                    }
+                    return result;
+                },
+
+                formatType(type) {
+                    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                },
+
+                formatTime(timestamp) {
+                    if (!timestamp) return '';
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString();
+                },
+
+                formatValue(value, metric) {
+                    if (metric && metric.includes('latency')) {
+                        return value.toFixed(0) + 'ms';
+                    }
+                    if (metric && metric.includes('rate')) {
+                        return value.toFixed(2) + '%';
+                    }
+                    if (metric && metric.includes('count')) {
+                        return value.toFixed(0) + ' req';
+                    }
+                    return value.toFixed(2);
+                },
+
+                getStatusClass(status) {
+                    switch (status) {
+                        case 'ACTIVE': return 'bg-red-100 text-red-800';
+                        case 'ACKNOWLEDGED': return 'bg-amber-100 text-amber-800';
+                        case 'RESOLVED': return 'bg-green-100 text-green-800';
+                        case 'IGNORED': return 'bg-gray-100 text-gray-800';
+                        default: return 'bg-gray-100 text-gray-800';
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

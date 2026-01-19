@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - Logs</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after { width: 80%; }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .log-row { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace; }
+        .log-row:hover { background-color: rgba(99, 102, 241, 0.1); }
+        .log-message { word-break: break-word; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .log-new { animation: slideIn 0.2s ease-out; }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-gray-100" x-data="logViewer()" x-init="init()">
+    <!-- Gradient Background -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10"></div>
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L2c+PC9zdmc+')] opacity-40 -z-10"></div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+            </div>
+            <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                <a href="{{BASE_PATH}}" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Overview</a>
+                <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">Logs</span>
+                <a href="{{BASE_PATH}}/traces" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Traces</a>
+                <a href="{{BASE_PATH}}/metrics" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Metrics</a>
+                <a href="{{BASE_PATH}}/health" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Health</a>
+                <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Alerts</a>
+                <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Tools</a>
+            </nav>
+        </header>
+
+        <!-- Actions Bar -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-slate-400 font-mono" x-text="'Total: ' + totalLogs"></span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button @click="togglePause()"
+                        :class="paused ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'"
+                        class="px-4 py-1.5 text-white text-sm rounded-lg font-medium shadow-lg transition-all">
+                    <span x-text="paused ? '▶ Resume' : '⏸ Pause'"></span>
+                </button>
+                <button @click="clearLogs()"
+                        class="px-4 py-1.5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="glass-card rounded-xl px-4 py-3 mb-6">
+            <div class="flex flex-wrap gap-4 items-center">
+            <!-- Level Filter -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Level:</label>
+                <select x-model="filters.level" @change="applyFilters()"
+                        class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">All</option>
+                    <option value="TRACE">TRACE</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARN">WARN</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+            </div>
+
+            <!-- Logger Filter -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Logger:</label>
+                <input type="text" x-model="filters.logger" @input.debounce.300ms="applyFilters()"
+                       placeholder="Filter by logger..."
+                       class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 w-48 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500">
+            </div>
+
+            <!-- Message Filter -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Message:</label>
+                <input type="text" x-model="filters.message" @input.debounce.300ms="applyFilters()"
+                       placeholder="Search message..."
+                       class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 w-64 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500">
+            </div>
+
+            <!-- Connection Status -->
+            <div class="ml-auto flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg">
+                <span class="w-2 h-2 rounded-full pulse-dot" :class="connected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'"></span>
+                <span class="text-xs font-medium" :class="connected ? 'text-green-400' : 'text-red-400'" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+            </div>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="flex gap-4 text-xs mb-6">
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-red-950/30 border border-red-900/30 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                <span class="text-red-400 font-medium">ERROR: <span class="font-mono" x-text="stats.errorCount">{{ERROR_COUNT}}</span></span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-950/30 border border-amber-900/30 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                <span class="text-amber-400 font-medium">WARN: <span class="font-mono" x-text="stats.warnCount">{{WARN_COUNT}}</span></span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-green-950/30 border border-green-900/30 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-green-400 font-medium">INFO: <span class="font-mono" x-text="stats.infoCount">{{INFO_COUNT}}</span></span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-950/30 border border-blue-900/30 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span class="text-blue-400 font-medium">DEBUG: <span class="font-mono" x-text="stats.debugCount">{{DEBUG_COUNT}}</span></span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-slate-500"></div>
+                <span class="text-slate-400 font-medium">TRACE: <span class="font-mono" x-text="stats.traceCount">{{TRACE_COUNT}}</span></span>
+            </div>
+        </div>
+
+        <!-- View Mode Toggle -->
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1 p-1 bg-slate-800/50 rounded-lg">
+                <button @click="viewMode = 'stream'"
+                        :class="viewMode === 'stream' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-all">
+                    Live Stream
+                </button>
+                <button @click="viewMode = 'paginated'; loadPaginatedLogs()"
+                        :class="viewMode === 'paginated' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'"
+                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-all">
+                    Paginated
+                </button>
+            </div>
+            <div x-show="viewMode === 'paginated'" class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400 font-medium">Per page:</label>
+                    <select x-model="limit" @change="offset = 0; loadPaginatedLogs()"
+                            class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5">
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log List -->
+        <div class="glass-card rounded-xl overflow-hidden">
+            <div class="overflow-auto" style="max-height: calc(100vh - 360px);">
+                <table class="min-w-full">
+                    <thead class="bg-slate-800/80 sticky top-0 backdrop-blur-sm">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-40">Time</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-20">Level</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-48">Logger</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Message</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/50" id="log-body">
+                        <template x-for="log in displayLogs" :key="log.id">
+                            <tr class="log-row text-xs hover:bg-indigo-500/5 transition-colors" :class="log.isNew ? 'log-new' : ''">
+                                <td class="px-4 py-2.5 text-slate-500 whitespace-nowrap font-mono" x-text="formatTime(log.timestamp)"></td>
+                                <td class="px-4 py-2.5">
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-semibold"
+                                          :class="log.levelBgCss + ' ' + log.levelCss"
+                                          x-text="log.level"></span>
+                                </td>
+                                <td class="px-4 py-2.5 text-slate-400 truncate font-mono text-xs" :title="log.logger" x-text="log.shortLogger"></td>
+                                <td class="px-4 py-2.5 text-slate-200 log-message">
+                                    <div x-text="log.message"></div>
+                                    <template x-if="log.hasThrowable">
+                                        <pre class="mt-2 text-xs text-red-400 whitespace-pre-wrap bg-red-950/30 border border-red-900/30 p-3 rounded-lg" x-text="log.throwable"></pre>
+                                    </template>
+                                    <template x-if="log.traceId">
+                                        <a :href="'{{BASE_PATH}}/traces/' + log.traceId"
+                                           class="text-indigo-400 hover:text-indigo-300 text-xs mt-1 inline-flex items-center gap-1 transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            <span x-text="log.traceId"></span>
+                                        </a>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="displayLogs.length === 0">
+                            <td colspan="4" class="py-12 text-center text-slate-500">
+                                <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                No logs found. Logs will appear here as your application generates them.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination (only in paginated mode) -->
+        <div x-show="viewMode === 'paginated'" class="flex justify-between items-center mt-3 glass-card rounded-xl p-4">
+            <div class="text-sm text-slate-400">
+                Showing <span class="text-slate-200 font-medium" x-text="paginatedLogs.length > 0 ? offset + 1 : 0"></span>-<span class="text-slate-200 font-medium" x-text="Math.min(offset + limit, paginatedTotal)"></span> of <span class="text-slate-200 font-medium" x-text="paginatedTotal"></span> logs
+            </div>
+            <div class="flex items-center gap-1">
+                <button @click="firstPage()" :disabled="offset === 0"
+                        class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    First
+                </button>
+                <button @click="prevPage()" :disabled="offset === 0"
+                        class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Prev
+                </button>
+                <span class="px-4 py-1.5 text-sm text-slate-300 font-medium" x-text="'Page ' + currentPage + ' of ' + totalPages"></span>
+                <button @click="nextPage()" :disabled="offset + limit >= paginatedTotal"
+                        class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Next
+                </button>
+                <button @click="lastPage()" :disabled="offset + limit >= paginatedTotal"
+                        class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Last
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function logViewer() {
+            return {
+                logs: [],
+                paginatedLogs: [],
+                totalLogs: 0,
+                paginatedTotal: 0,
+                connected: false,
+                paused: false,
+                ws: null,
+                viewMode: 'stream',
+                limit: 50,
+                offset: 0,
+                filters: {
+                    level: 'INFO',
+                    logger: '',
+                    message: ''
+                },
+                stats: {
+                    errorCount: {{ERROR_COUNT}},
+                    warnCount: {{WARN_COUNT}},
+                    infoCount: {{INFO_COUNT}},
+                    debugCount: {{DEBUG_COUNT}},
+                    traceCount: {{TRACE_COUNT}}
+                },
+
+                get displayLogs() {
+                    return this.viewMode === 'stream' ? this.logs : this.paginatedLogs;
+                },
+
+                get currentPage() {
+                    return Math.floor(this.offset / this.limit) + 1;
+                },
+
+                get totalPages() {
+                    return Math.max(1, Math.ceil(this.paginatedTotal / this.limit));
+                },
+
+                init() {
+                    this.connect();
+                    this.loadInitialLogs();
+                },
+
+                connect() {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = protocol + '//' + window.location.host + '{{BASE_PATH}}/ws/logs';
+
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        this.connected = true;
+                        this.applyFilters();
+                    };
+
+                    this.ws.onclose = () => {
+                        this.connected = false;
+                        setTimeout(() => this.connect(), 3000);
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        if (this.viewMode !== 'stream') return;
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'log') {
+                            this.addLog(data.data);
+                        }
+                    };
+                },
+
+                loadInitialLogs() {
+                    const params = new URLSearchParams({
+                        limit: 100
+                    });
+                    if (this.filters.level) params.set('level', this.filters.level);
+                    if (this.filters.logger) params.set('logger', this.filters.logger);
+                    if (this.filters.message) params.set('message', this.filters.message);
+
+                    fetch('{{BASE_PATH}}/api/logs?' + params)
+                        .then(res => res.json())
+                        .then(data => {
+                            this.logs = data.logs;
+                            this.totalLogs = data.total;
+                        });
+                },
+
+                loadPaginatedLogs() {
+                    const params = new URLSearchParams({
+                        limit: this.limit,
+                        offset: this.offset
+                    });
+                    if (this.filters.level) params.set('level', this.filters.level);
+                    if (this.filters.logger) params.set('logger', this.filters.logger);
+                    if (this.filters.message) params.set('message', this.filters.message);
+
+                    fetch('{{BASE_PATH}}/api/logs?' + params)
+                        .then(res => res.json())
+                        .then(data => {
+                            this.paginatedLogs = data.logs;
+                            this.paginatedTotal = data.total;
+                        });
+                },
+
+                addLog(log) {
+                    log.isNew = true;
+                    this.logs.unshift(log);
+                    this.totalLogs++;
+                    this.updateStats(log.level, 1);
+
+                    if (this.logs.length > 500) {
+                        const removed = this.logs.pop();
+                        this.updateStats(removed.level, -1);
+                    }
+
+                    setTimeout(() => {
+                        log.isNew = false;
+                    }, 500);
+                },
+
+                updateStats(level, delta) {
+                    switch(level) {
+                        case 'ERROR': this.stats.errorCount += delta; break;
+                        case 'WARN': this.stats.warnCount += delta; break;
+                        case 'INFO': this.stats.infoCount += delta; break;
+                        case 'DEBUG': this.stats.debugCount += delta; break;
+                        case 'TRACE': this.stats.traceCount += delta; break;
+                    }
+                },
+
+                applyFilters() {
+                    if (this.viewMode === 'paginated') {
+                        this.offset = 0;
+                        this.loadPaginatedLogs();
+                    } else {
+                        // In Live Stream mode: reload existing logs with new filters
+                        this.loadInitialLogs();
+
+                        // Also update WebSocket filter for new incoming logs
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({
+                                type: 'filter',
+                                minLevel: this.filters.level || 'TRACE',
+                                logger: this.filters.logger,
+                                message: this.filters.message
+                            }));
+                        }
+                    }
+                },
+
+                togglePause() {
+                    this.paused = !this.paused;
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({
+                            type: this.paused ? 'pause' : 'resume'
+                        }));
+                    }
+                },
+
+                clearLogs() {
+                    fetch('{{BASE_PATH}}/api/logs', { method: 'DELETE' })
+                        .then(() => {
+                            this.logs = [];
+                            this.paginatedLogs = [];
+                            this.totalLogs = 0;
+                            this.paginatedTotal = 0;
+                            this.stats = { errorCount: 0, warnCount: 0, infoCount: 0, debugCount: 0, traceCount: 0 };
+                        });
+                },
+
+                firstPage() {
+                    this.offset = 0;
+                    this.loadPaginatedLogs();
+                },
+
+                prevPage() {
+                    this.offset = Math.max(0, this.offset - this.limit);
+                    this.loadPaginatedLogs();
+                },
+
+                nextPage() {
+                    if (this.offset + this.limit < this.paginatedTotal) {
+                        this.offset += this.limit;
+                        this.loadPaginatedLogs();
+                    }
+                },
+
+                lastPage() {
+                    this.offset = Math.floor((this.paginatedTotal - 1) / this.limit) * this.limit;
+                    this.loadPaginatedLogs();
+                },
+
+                formatTime(timestamp) {
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        fractionalSecondDigits: 3
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

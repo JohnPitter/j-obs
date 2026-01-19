@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - Health</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .gradient-border:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .health-card {
+            transition: all 0.3s ease;
+        }
+        .health-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+        .status-healthy {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .status-unhealthy {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-gray-100" x-data="healthViewer()" x-init="init()">
+    <!-- Background gradient -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 -z-10"></div>
+    <div class="fixed inset-0 -z-10 opacity-30">
+        <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+        </svg>
+    </div>
+
+    <div class="min-h-full p-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <header class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+                </div>
+                <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                    <a href="{{BASE_PATH}}" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Overview</a>
+                    <a href="{{BASE_PATH}}/logs" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Logs</a>
+                    <a href="{{BASE_PATH}}/traces" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Traces</a>
+                    <a href="{{BASE_PATH}}/metrics" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Metrics</a>
+                    <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">Health</span>
+                    <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Alerts</a>
+                    <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Tools</a>
+                </nav>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-slate-400" x-text="'Last check: ' + formatTime(lastCheckTime)"></span>
+                    <button @click="refreshHealth()"
+                            class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-indigo-500/25">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Refresh
+                        </span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Overall Status Banner -->
+            <div class="mb-8">
+                <div class="rounded-2xl p-6 flex items-center justify-between"
+                     :class="health.healthy ? 'status-healthy' : 'status-unhealthy'">
+                    <div class="flex items-center gap-5">
+                        <div class="relative">
+                            <div class="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+                                 :class="health.healthy ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gradient-to-br from-red-400 to-rose-500'">
+                                <svg x-show="health.healthy" class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <svg x-show="!health.healthy" class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </div>
+                            <div class="absolute inset-0 rounded-full"
+                                 :class="health.healthy ? 'bg-green-500' : 'bg-red-500'"
+                                 x-show="!health.healthy"
+                                 class="pulse-ring opacity-50"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold" :class="health.healthy ? 'text-green-300' : 'text-red-300'"
+                                x-text="health.statusDisplayName"></h2>
+                            <p class="text-base mt-1" :class="health.healthy ? 'text-green-400/80' : 'text-red-400/80'"
+                               x-text="health.summary"></p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-5xl font-bold" :class="health.healthy ? 'text-green-300' : 'text-red-300'" x-text="healthyCount"></span>
+                            <span class="text-2xl font-medium" :class="health.healthy ? 'text-green-400/60' : 'text-red-400/60'">/</span>
+                            <span class="text-2xl font-medium" :class="health.healthy ? 'text-green-400/60' : 'text-red-400/60'" x-text="totalCount"></span>
+                        </div>
+                        <p class="text-sm mt-1" :class="health.healthy ? 'text-green-400/80' : 'text-red-400/80'">components healthy</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Component Cards -->
+            <main>
+                <!-- Section Header -->
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white">Components</h3>
+                    <span class="px-2 py-0.5 bg-slate-700 rounded-full text-xs text-slate-300" x-text="totalCount + ' total'"></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <template x-for="component in health.components" :key="component.name">
+                        <div class="health-card glass-card rounded-xl p-5">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                                         :class="component.healthy ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30' : 'bg-gradient-to-br from-red-500/20 to-rose-500/20 border border-red-500/30'">
+                                        <span class="text-2xl" x-text="component.statusEmoji"></span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-white" x-text="component.displayName"></h3>
+                                        <p class="text-sm" :class="component.healthy ? 'text-green-400' : 'text-red-400'" x-text="component.statusDisplayName"></p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-medium rounded-lg"
+                                      :class="component.healthy ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'"
+                                      x-text="component.status"></span>
+                            </div>
+
+                            <!-- Error -->
+                            <template x-if="component.error">
+                                <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+                                    <div class="flex items-start gap-2">
+                                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span x-text="component.error"></span>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Details -->
+                            <template x-if="Object.keys(component.details).length > 0">
+                                <div class="mt-4 pt-4 border-t border-slate-700/50 space-y-2">
+                                    <template x-for="(value, key) in component.details" :key="key">
+                                        <div class="flex justify-between items-center text-sm" x-show="key !== 'error'">
+                                            <span class="text-slate-400" x-text="key"></span>
+                                            <span class="text-slate-200 font-mono text-xs bg-slate-800/50 px-2 py-0.5 rounded" x-text="formatValue(value)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Last Check -->
+                            <div class="mt-4 pt-3 border-t border-slate-700/50 flex items-center gap-2 text-xs text-slate-500">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Checked: <span x-text="formatTime(component.checkedAt)"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="health.components.length === 0" class="glass-card rounded-2xl p-12 text-center">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-2">No health components</h3>
+                    <p class="text-slate-400 text-sm">Configure Spring Boot Actuator health indicators to see component status here.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        function healthViewer() {
+            return {
+                health: {
+                    status: '{{STATUS}}',
+                    statusDisplayName: '{{STATUS_DISPLAY_NAME}}',
+                    healthy: {{IS_HEALTHY}},
+                    summary: '{{SUMMARY}}',
+                    components: []
+                },
+                lastCheckTime: null,
+
+                get totalCount() {
+                    return this.health.components.length;
+                },
+
+                get healthyCount() {
+                    return this.health.components.filter(c => c.healthy).length;
+                },
+
+                init() {
+                    this.loadHealth();
+                    setInterval(() => this.loadHealth(), 30000);
+                },
+
+                loadHealth() {
+                    fetch('{{BASE_PATH}}/api/health')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.health = data;
+                            this.lastCheckTime = data.timestamp;
+                        });
+                },
+
+                refreshHealth() {
+                    fetch('{{BASE_PATH}}/api/health/refresh', { method: 'POST' })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.health = data;
+                            this.lastCheckTime = data.timestamp;
+                        });
+                },
+
+                formatTime(timestamp) {
+                    if (!timestamp) return 'N/A';
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                },
+
+                formatValue(value) {
+                    if (value === null || value === undefined) return 'N/A';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

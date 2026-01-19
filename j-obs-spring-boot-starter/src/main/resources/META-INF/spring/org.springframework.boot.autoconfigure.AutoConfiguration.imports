@@ -1,0 +1,16 @@
+io.github.jobs.spring.autoconfigure.JObsAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsTraceAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsLogAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsMetricAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsHealthAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsAlertAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsAlertNotificationAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsInstrumentationAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsToolsAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsActuatorAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsWebSocketConfiguration
+io.github.jobs.spring.autoconfigure.JObsSqlAnalyzerAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsAnomalyDetectionAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsServiceMapAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsSloAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsProfilingAutoConfiguration

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - Metrics</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after { width: 80%; }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .metric-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-gray-100" x-data="metricsViewer()" x-init="init()">
+    <!-- Gradient Background -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10"></div>
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L2c+PC9zdmc+')] opacity-40 -z-10"></div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+            </div>
+            <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                <a href="{{BASE_PATH}}" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Overview</a>
+                <a href="{{BASE_PATH}}/logs" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Logs</a>
+                <a href="{{BASE_PATH}}/traces" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Traces</a>
+                <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">Metrics</span>
+                <a href="{{BASE_PATH}}/health" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Health</a>
+                <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Alerts</a>
+                <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Tools</a>
+            </nav>
+        </header>
+
+        <!-- Actions Bar -->
+        <div class="flex items-center justify-between mb-6">
+            <span class="text-sm text-slate-400 font-mono" x-text="'Total: ' + totalMetrics"></span>
+            <button @click="refreshMetrics()"
+                    class="px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all">
+                🔄 Refresh
+            </button>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="flex flex-wrap gap-3 text-sm mb-4">
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-950/30 border border-blue-900/30 rounded-lg group relative cursor-help">
+                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span class="text-blue-400 font-medium">Counters: <span class="font-mono" x-text="stats.counterCount">{{COUNTER_COUNT}}</span></span>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 top-full mt-2 z-20 p-3 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl w-64">
+                    <strong class="text-blue-400">Counter:</strong> Valor que só aumenta (nunca diminui). Reseta quando a aplicação reinicia.<br><br>
+                    <span class="text-slate-500">Ex: total de requisições HTTP, número de erros, mensagens processadas.</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-green-950/30 border border-green-900/30 rounded-lg group relative cursor-help">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-green-400 font-medium">Gauges: <span class="font-mono" x-text="stats.gaugeCount">{{GAUGE_COUNT}}</span></span>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 top-full mt-2 z-20 p-3 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl w-64">
+                    <strong class="text-green-400">Gauge:</strong> Valor instantâneo que pode subir ou descer. Representa estado atual.<br><br>
+                    <span class="text-slate-500">Ex: memória heap usada, threads ativas, conexões no pool, tamanho de fila.</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-purple-950/30 border border-purple-900/30 rounded-lg group relative cursor-help">
+                <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                <span class="text-purple-400 font-medium">Timers: <span class="font-mono" x-text="stats.timerCount">{{TIMER_COUNT}}</span></span>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 top-full mt-2 z-20 p-3 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl w-64">
+                    <strong class="text-purple-400">Timer:</strong> Mede duração de eventos. Combina contador + histograma de tempos.<br><br>
+                    <span class="text-slate-500">Ex: latência de requisições HTTP, tempo de execução de queries SQL.</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-orange-950/30 border border-orange-900/30 rounded-lg group relative cursor-help">
+                <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span class="text-orange-400 font-medium">Distributions: <span class="font-mono" x-text="stats.distributionCount">{{DISTRIBUTION_COUNT}}</span></span>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 top-full mt-2 z-20 p-3 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl w-64">
+                    <strong class="text-orange-400">Distribution:</strong> Histograma de distribuição de valores. Similar a Timer mas para valores não-temporais.<br><br>
+                    <span class="text-slate-500">Ex: tamanho de payloads, número de itens em batch.</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-slate-500"></div>
+                <span class="text-slate-400 font-medium">Other: <span class="font-mono" x-text="stats.otherCount">{{OTHER_COUNT}}</span></span>
+            </div>
+        </div>
+
+        <!-- Metric Types Legend -->
+        <div x-data="{ showLegend: false }" class="mb-6">
+            <button @click="showLegend = !showLegend" class="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span x-text="showLegend ? 'Ocultar explicação dos tipos' : 'O que significam esses tipos?'"></span>
+                <svg class="w-4 h-4 transition-transform" :class="showLegend ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="showLegend" x-transition class="mt-3 p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="flex gap-3">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-medium text-blue-400">Counter</div>
+                            <div class="text-slate-400 text-xs">Valor que só aumenta (nunca diminui). Reseta quando a aplicação reinicia.</div>
+                            <div class="text-slate-500 text-xs mt-1">Ex: http_server_requests_total, jvm_gc_pause_total</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-medium text-green-400">Gauge</div>
+                            <div class="text-slate-400 text-xs">Valor instantâneo que pode subir ou descer. Representa estado atual.</div>
+                            <div class="text-slate-500 text-xs mt-1">Ex: jvm_memory_used_bytes, jvm_threads_live</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-3 h-3 rounded-full bg-purple-500 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-medium text-purple-400">Timer</div>
+                            <div class="text-slate-400 text-xs">Mede duração de eventos. Combina contador + histograma de tempos.</div>
+                            <div class="text-slate-500 text-xs mt-1">Ex: http_server_requests_seconds, jdbc_query_seconds</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="w-3 h-3 rounded-full bg-orange-500 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-medium text-orange-400">Distribution</div>
+                            <div class="text-slate-400 text-xs">Histograma de distribuição de valores. Similar a Timer mas para valores não-temporais.</div>
+                            <div class="text-slate-500 text-xs mt-1">Ex: http_server_request_size_bytes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="glass-card rounded-xl px-4 py-3 mb-6">
+            <div class="flex flex-wrap gap-4 items-center">
+            <!-- Search -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Search:</label>
+                <input type="text" x-model="filters.name" @input.debounce.300ms="loadMetrics()"
+                       placeholder="Filter by name..."
+                       class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 w-48 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500">
+            </div>
+
+            <!-- Type Filter -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Type:</label>
+                <select x-model="filters.type" @change="loadMetrics()"
+                        class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5">
+                    <option value="">All</option>
+                    <option value="COUNTER">Counter</option>
+                    <option value="GAUGE">Gauge</option>
+                    <option value="TIMER">Timer</option>
+                    <option value="DISTRIBUTION_SUMMARY">Distribution</option>
+                </select>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400 font-medium">Category:</label>
+                <select x-model="filters.category" @change="loadMetrics()"
+                        class="text-sm bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-1.5">
+                    <option value="">All</option>
+                    <template x-for="cat in categories" :key="cat">
+                        <option :value="cat" x-text="cat"></option>
+                    </template>
+                </select>
+            </div>
+            </div>
+        </div>
+        <!-- Quick Stats Section -->
+        <div class="mb-6">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-slate-100">System Overview</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">JVM Memory Used</p>
+                    <p class="text-lg font-bold text-blue-400" x-text="quickStats.jvmMemoryUsed"></p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">JVM Memory Max</p>
+                    <p class="text-lg font-bold text-slate-300" x-text="quickStats.jvmMemoryMax"></p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">Active Threads</p>
+                    <p class="text-lg font-bold text-green-400" x-text="quickStats.threads"></p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">CPU Usage</p>
+                    <p class="text-lg font-bold text-purple-400" x-text="quickStats.cpuUsage"></p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">Uptime</p>
+                    <p class="text-lg font-bold text-orange-400" x-text="quickStats.uptime"></p>
+                </div>
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-xs text-slate-500 font-medium mb-1">GC Count</p>
+                    <p class="text-lg font-bold text-slate-400" x-text="quickStats.gcCount"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics by Category -->
+        <template x-for="category in getUniqueCategories()" :key="category">
+            <div class="mb-8">
+                <!-- Category Header -->
+                <div class="flex items-center gap-2 mb-4 cursor-pointer" @click="toggleCategory(category)">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="getCategoryIconClass(category)">
+                        <svg class="w-4 h-4" :class="getCategoryIconColor(category)" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="getCategoryIcon(category)"></svg>
+                    </div>
+                    <h2 class="text-lg font-semibold text-slate-100" x-text="formatCategoryName(category)"></h2>
+                    <span class="text-sm text-slate-500 ml-2" x-text="'(' + getMetricsByCategory(category).length + ')'"></span>
+                    <svg class="w-5 h-5 text-slate-400 ml-auto transition-transform" :class="collapsedCategories[category] ? '' : 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+                <!-- Category Metrics Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" x-show="!collapsedCategories[category]" x-transition>
+                    <template x-for="metric in getMetricsByCategory(category)" :key="metric.id">
+                        <div class="metric-card glass-card rounded-xl p-4 cursor-pointer"
+                             @click="showMetricDetail(metric)">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-sm font-medium text-slate-200 truncate" :title="metric.name" x-text="metric.displayName"></h3>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-md"
+                                      :class="getTypeBadgeClass(metric.type)"
+                                      x-text="metric.typeDisplayName"></span>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-2xl font-bold" :class="metric.cssClass" x-text="formatMetricValue(metric)"></p>
+                                <p class="text-xs text-slate-500" x-text="formatUnit(metric.baseUnit)"></p>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-1" x-show="Object.keys(metric.tags || {}).length > 0">
+                                <template x-for="(value, key) in metric.tags" :key="key">
+                                    <span class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-md truncate max-w-32" :title="key + '=' + value">
+                                        <span x-text="formatTag(key, value)"></span>
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Empty State -->
+        <div x-show="metrics.length === 0" class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-slate-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-slate-300">No metrics found</h3>
+            <p class="mt-1 text-sm text-slate-500">Try adjusting your filters.</p>
+        </div>
+
+        <!-- Pagination -->
+        <div x-show="totalMetrics > limit" class="mt-6 flex justify-center">
+            <nav class="flex items-center gap-2">
+                <button @click="prevPage()" :disabled="offset === 0"
+                        class="px-4 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    ‹ Previous
+                </button>
+                <span class="text-sm text-slate-400 px-3" x-text="'Page ' + currentPage + ' of ' + totalPages"></span>
+                <button @click="nextPage()" :disabled="offset + limit >= totalMetrics"
+                        class="px-4 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Next ›
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Metric Detail Modal -->
+    <div x-show="selectedMetric" x-cloak
+         class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+         @click.self="selectedMetric = null">
+        <div class="glass-card rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-auto border-slate-700/50">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100" x-text="selectedMetric?.name"></h2>
+                        <p class="text-sm text-slate-400" x-text="selectedMetric?.description || 'No description'"></p>
+                    </div>
+                    <button @click="selectedMetric = null" class="text-slate-400 hover:text-white p-1 hover:bg-slate-700 rounded transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Chart -->
+                <div class="mt-6 bg-slate-900/50 rounded-xl p-4">
+                    <canvas id="metricChart" height="200"></canvas>
+                </div>
+
+                <!-- Current Value -->
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-slate-800/50 p-4 rounded-lg">
+                        <p class="text-xs text-slate-500 font-medium mb-1">Current</p>
+                        <p class="text-lg font-bold text-slate-100" x-text="selectedMetric?.currentValue?.formattedValue || 'N/A'"></p>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-lg" x-show="selectedMetric?.currentValue?.statistics?.count">
+                        <p class="text-xs text-slate-500 font-medium mb-1">Count</p>
+                        <p class="text-lg font-bold text-slate-100" x-text="formatNumber(selectedMetric?.currentValue?.statistics?.count)"></p>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-lg" x-show="selectedMetric?.currentValue?.statistics?.mean">
+                        <p class="text-xs text-slate-500 font-medium mb-1">Mean</p>
+                        <p class="text-lg font-bold text-slate-100" x-text="formatNumber(selectedMetric?.currentValue?.statistics?.mean)"></p>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-lg" x-show="selectedMetric?.currentValue?.statistics?.max">
+                        <p class="text-xs text-slate-500 font-medium mb-1">Max</p>
+                        <p class="text-lg font-bold text-slate-100" x-text="formatNumber(selectedMetric?.currentValue?.statistics?.max)"></p>
+                    </div>
+                </div>
+
+                <!-- Percentiles -->
+                <template x-if="selectedMetric?.currentValue?.percentiles && Object.keys(selectedMetric.currentValue.percentiles).length > 0">
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-slate-400 mb-2">Percentiles</h4>
+                        <div class="grid grid-cols-4 gap-2">
+                            <template x-for="(value, key) in selectedMetric.currentValue.percentiles" :key="key">
+                                <div class="bg-slate-800/50 p-3 rounded-lg text-center">
+                                    <p class="text-xs text-slate-500" x-text="key"></p>
+                                    <p class="text-sm font-medium text-slate-200" x-text="formatNumber(value)"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Tags -->
+                <template x-if="selectedMetric?.tags && Object.keys(selectedMetric.tags).length > 0">
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-slate-400 mb-2">Tags</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="(value, key) in selectedMetric.tags" :key="key">
+                                <span class="px-2 py-1 text-xs bg-slate-800 text-slate-300 rounded-md">
+                                    <span class="font-medium text-indigo-400" x-text="key"></span>: <span x-text="value"></span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function metricsViewer() {
+            return {
+                metrics: [],
+                categories: [],
+                totalMetrics: 0,
+                limit: 30,
+                offset: 0,
+                filters: { name: '', type: '', category: '' },
+                stats: {
+                    counterCount: {{COUNTER_COUNT}},
+                    gaugeCount: {{GAUGE_COUNT}},
+                    timerCount: {{TIMER_COUNT}},
+                    distributionCount: {{DISTRIBUTION_COUNT}},
+                    otherCount: {{OTHER_COUNT}}
+                },
+                quickStats: {
+                    jvmMemoryUsed: '--',
+                    jvmMemoryMax: '--',
+                    threads: '--',
+                    cpuUsage: '--',
+                    uptime: '--',
+                    gcCount: '--'
+                },
+                selectedMetric: null,
+                chart: null,
+                collapsedCategories: {},
+
+                get currentPage() {
+                    return Math.floor(this.offset / this.limit) + 1;
+                },
+
+                get totalPages() {
+                    return Math.ceil(this.totalMetrics / this.limit);
+                },
+
+                init() {
+                    this.loadMetrics();
+                    this.loadCategories();
+                    this.loadStats();
+                    this.loadQuickStats();
+
+                    // Auto-refresh every 10 seconds
+                    setInterval(() => {
+                        this.loadMetrics();
+                        this.loadStats();
+                        this.loadQuickStats();
+                    }, 10000);
+                },
+
+                async loadQuickStats() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/metrics/quick-stats');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.quickStats = {
+                                jvmMemoryUsed: this.formatBytes(data.jvmMemoryUsed),
+                                jvmMemoryMax: this.formatBytes(data.jvmMemoryMax),
+                                threads: data.threadCount || '--',
+                                cpuUsage: data.cpuUsage ? (data.cpuUsage * 100).toFixed(1) + '%' : '--',
+                                uptime: this.formatDuration(data.uptime),
+                                gcCount: data.gcCount || '0'
+                            };
+                        }
+                    } catch (e) {
+                        console.log('Quick stats not available');
+                    }
+                },
+
+                formatBytes(bytes) {
+                    if (!bytes || bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                },
+
+                formatDuration(seconds) {
+                    if (!seconds) return '--';
+                    const h = Math.floor(seconds / 3600);
+                    const m = Math.floor((seconds % 3600) / 60);
+                    if (h > 0) return h + 'h ' + m + 'm';
+                    return m + 'm';
+                },
+
+                formatMetricValue(metric) {
+                    if (metric.baseUnit === 'bytes') {
+                        return this.formatBytes(metric.value);
+                    }
+                    if (metric.baseUnit === 'seconds' && metric.value < 1) {
+                        return (metric.value * 1000).toFixed(0) + 'ms';
+                    }
+                    return metric.formattedValue;
+                },
+
+                formatUnit(unit) {
+                    if (!unit) return '';
+                    if (unit === 'bytes') return '';
+                    return unit;
+                },
+
+                formatTag(key, value) {
+                    // Truncate long values
+                    const shortKey = key.length > 10 ? key.substring(0, 10) + '..' : key;
+                    const shortVal = value.length > 15 ? value.substring(0, 15) + '..' : value;
+                    return shortKey + '=' + shortVal;
+                },
+
+                getUniqueCategories() {
+                    const cats = [...new Set(this.metrics.map(m => m.category || 'Other'))];
+                    // Sort categories with priority: JVM, HTTP, System, then alphabetically
+                    const priority = ['JVM', 'HTTP', 'System', 'Process', 'Disk', 'Logback', 'Tomcat', 'Cache', 'Database'];
+                    return cats.sort((a, b) => {
+                        const ai = priority.indexOf(a);
+                        const bi = priority.indexOf(b);
+                        if (ai !== -1 && bi !== -1) return ai - bi;
+                        if (ai !== -1) return -1;
+                        if (bi !== -1) return 1;
+                        return a.localeCompare(b);
+                    });
+                },
+
+                getMetricsByCategory(category) {
+                    return this.metrics.filter(m => (m.category || 'Other') === category);
+                },
+
+                toggleCategory(category) {
+                    this.collapsedCategories[category] = !this.collapsedCategories[category];
+                },
+
+                formatCategoryName(category) {
+                    if (!category) return 'Other';
+                    return category.charAt(0).toUpperCase() + category.slice(1);
+                },
+
+                getCategoryIconClass(category) {
+                    const classes = {
+                        'JVM': 'bg-gradient-to-br from-orange-500/20 to-red-500/20',
+                        'HTTP': 'bg-gradient-to-br from-green-500/20 to-emerald-500/20',
+                        'System': 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20',
+                        'Process': 'bg-gradient-to-br from-purple-500/20 to-violet-500/20',
+                        'Disk': 'bg-gradient-to-br from-amber-500/20 to-yellow-500/20',
+                        'Logback': 'bg-gradient-to-br from-gray-500/20 to-slate-500/20',
+                        'Tomcat': 'bg-gradient-to-br from-red-500/20 to-rose-500/20',
+                        'Cache': 'bg-gradient-to-br from-cyan-500/20 to-teal-500/20',
+                        'Database': 'bg-gradient-to-br from-indigo-500/20 to-blue-500/20'
+                    };
+                    return classes[category] || 'bg-gradient-to-br from-slate-500/20 to-gray-500/20';
+                },
+
+                getCategoryIconColor(category) {
+                    const colors = {
+                        'JVM': 'text-orange-400',
+                        'HTTP': 'text-green-400',
+                        'System': 'text-blue-400',
+                        'Process': 'text-purple-400',
+                        'Disk': 'text-amber-400',
+                        'Logback': 'text-gray-400',
+                        'Tomcat': 'text-red-400',
+                        'Cache': 'text-cyan-400',
+                        'Database': 'text-indigo-400'
+                    };
+                    return colors[category] || 'text-slate-400';
+                },
+
+                getCategoryIcon(category) {
+                    const icons = {
+                        'JVM': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>',
+                        'HTTP': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>',
+                        'System': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
+                        'Process': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>',
+                        'Disk': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>',
+                        'Logback': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+                        'Tomcat': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>',
+                        'Cache': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>',
+                        'Database': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>'
+                    };
+                    return icons[category] || '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>';
+                },
+
+                loadMetrics() {
+                    let url = '{{BASE_PATH}}/api/metrics?limit=' + this.limit + '&offset=' + this.offset;
+                    if (this.filters.name) url += '&name=' + encodeURIComponent(this.filters.name);
+                    if (this.filters.type) url += '&type=' + encodeURIComponent(this.filters.type);
+                    if (this.filters.category) url += '&category=' + encodeURIComponent(this.filters.category);
+
+                    fetch(url)
+                        .then(res => res.json())
+                        .then(data => {
+                            this.metrics = data.metrics;
+                            this.totalMetrics = data.total;
+                        });
+                },
+
+                loadCategories() {
+                    fetch('{{BASE_PATH}}/api/metrics/categories')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.categories = data;
+                        });
+                },
+
+                loadStats() {
+                    fetch('{{BASE_PATH}}/api/metrics/stats')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.stats = data;
+                        });
+                },
+
+                refreshMetrics() {
+                    fetch('{{BASE_PATH}}/api/metrics/refresh', { method: 'POST' })
+                        .then(() => {
+                            this.loadMetrics();
+                            this.loadStats();
+                        });
+                },
+
+                showMetricDetail(metric) {
+                    fetch('{{BASE_PATH}}/api/metrics/' + encodeURIComponent(metric.id))
+                        .then(res => res.json())
+                        .then(data => {
+                            this.selectedMetric = data;
+                            this.$nextTick(() => this.renderChart(data));
+                        });
+                },
+
+                renderChart(metric) {
+                    const ctx = document.getElementById('metricChart');
+                    if (!ctx) return;
+
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+
+                    const history = metric.history || [];
+                    const labels = history.map(p => new Date(p.timestamp).toLocaleTimeString());
+                    const values = history.map(p => p.value);
+
+                    this.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: metric.name,
+                                data: values,
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: true, grid: { display: false } },
+                                y: { display: true, beginAtZero: true }
+                            }
+                        }
+                    });
+                },
+
+                getTypeBadgeClass(type) {
+                    const classes = {
+                        'COUNTER': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                        'GAUGE': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                        'TIMER': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                        'DISTRIBUTION_SUMMARY': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+                        'LONG_TASK_TIMER': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    };
+                    return classes[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                },
+
+                formatNumber(num) {
+                    if (num === undefined || num === null) return 'N/A';
+                    if (num === Math.floor(num)) return num.toLocaleString();
+                    return num.toFixed(2);
+                },
+
+                prevPage() {
+                    if (this.offset > 0) {
+                        this.offset = Math.max(0, this.offset - this.limit);
+                        this.loadMetrics();
+                    }
+                },
+
+                nextPage() {
+                    if (this.offset + this.limit < this.totalMetrics) {
+                        this.offset += this.limit;
+                        this.loadMetrics();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

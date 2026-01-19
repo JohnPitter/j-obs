@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 2px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .gradient-border:hover::before { opacity: 1; }
+        .nav-link {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after { width: 80%; }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-gray-100 min-h-screen" x-data="dashboard()" x-init="init()">
+    <!-- Gradient Background -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10"></div>
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L2c+PC9zdmc+')] opacity-40 -z-10"></div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+                <div class="flex items-center gap-2 text-sm text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
+                    <span x-text="'Live (' + refreshInterval + 's)'"></span>
+                </div>
+            </div>
+            <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">Overview</span>
+                <a href="{{BASE_PATH}}/logs" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Logs</a>
+                <a href="{{BASE_PATH}}/traces" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Traces</a>
+                <a href="{{BASE_PATH}}/metrics" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Metrics</a>
+                <a href="{{BASE_PATH}}/health" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Health</a>
+                <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Alerts</a>
+                <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Tools</a>
+            </nav>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass-card gradient-border p-5 rounded-xl cursor-pointer" @click="window.location='{{BASE_PATH}}/health'">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Health</span>
+                </div>
+                <div class="text-2xl font-bold" :class="health.healthy ? 'text-green-400' : 'text-red-400'" x-text="health.statusDisplayName || '{{STATUS}}'"></div>
+                <div class="text-xs text-slate-500 mt-1" x-text="health.summary || ''"></div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Dependencies</span>
+                </div>
+                <div class="text-2xl font-bold text-slate-100">{{FOUND_COUNT}}/{{TOTAL_COUNT}}</div>
+                <div class="text-xs mt-1" :class="{{MISSING_OPTIONAL}} > 0 ? 'text-amber-400' : 'text-slate-500'">
+                    <span x-show="{{MISSING_OPTIONAL}} > 0">{{MISSING_OPTIONAL}} optional missing</span>
+                    <span x-show="{{MISSING_OPTIONAL}} === 0">All configured</span>
+                </div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl cursor-pointer" @click="window.location='{{BASE_PATH}}/traces'">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Traces</span>
+                </div>
+                <div class="text-2xl font-bold text-blue-400" x-text="traces.total || 0"></div>
+                <div class="text-xs mt-1" :class="traces.errorCount > 0 ? 'text-red-400' : 'text-slate-500'" x-text="traces.errorCount ? traces.errorCount + ' errors' : 'No errors'"></div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl cursor-pointer" @click="window.location='{{BASE_PATH}}/logs'">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Logs</span>
+                </div>
+                <div class="text-2xl font-bold text-slate-100" x-text="logs.total || 0"></div>
+                <div class="text-xs mt-1" :class="logs.errorCount > 0 ? 'text-red-400' : 'text-slate-500'" x-text="logs.errorCount ? logs.errorCount + ' errors' : 'No errors'"></div>
+            </div>
+        </div>
+
+        <!-- Request Rate & Top Endpoints -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Request Rate Chart -->
+            <div class="glass-card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-100">Request Rate</h2>
+                        <span class="text-xs text-slate-500">(last 5 min)</span>
+                    </div>
+                    <div class="text-sm text-slate-400">
+                        <span x-text="requestRate.avgPerMinute?.toFixed(1) || '0'"></span> req/min avg
+                    </div>
+                </div>
+                <div class="h-48">
+                    <canvas id="requestRateChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Endpoints -->
+            <div class="glass-card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-100">Top Endpoints</h2>
+                        <span class="text-xs text-slate-500">(by latency)</span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <template x-for="(ep, index) in topEndpoints" :key="ep.endpoint">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300" x-text="index + 1"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-slate-200 truncate" x-text="ep.endpoint"></span>
+                                </div>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <span class="text-xs text-slate-500" x-text="ep.count + ' calls'"></span>
+                                    <span class="text-xs" :class="ep.errorRate > 0 ? 'text-red-400' : 'text-slate-500'" x-text="ep.errorRate > 0 ? ep.errorRate.toFixed(1) + '% errors' : 'no errors'"></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-mono" :class="ep.avgLatencyMs > 500 ? 'text-red-400' : ep.avgLatencyMs > 200 ? 'text-amber-400' : 'text-green-400'" x-text="Math.round(ep.avgLatencyMs) + 'ms'"></div>
+                                <div class="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden mt-1">
+                                    <div class="h-full rounded-full transition-all"
+                                         :class="ep.avgLatencyMs > 500 ? 'bg-red-500' : ep.avgLatencyMs > 200 ? 'bg-amber-500' : 'bg-green-500'"
+                                         :style="'width: ' + Math.min(100, (ep.avgLatencyMs / maxEndpointLatency) * 100) + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="topEndpoints.length === 0" class="text-center py-8 text-slate-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                        No endpoint data yet
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two-Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Recent Traces -->
+            <div class="glass-card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-100">Recent Traces</h2>
+                    </div>
+                    <a href="{{BASE_PATH}}/traces" class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">View all →</a>
+                </div>
+                <div class="space-y-2">
+                    <template x-for="trace in recentTraces" :key="trace.traceId">
+                        <a :href="'{{BASE_PATH}}/traces/' + trace.traceId"
+                           class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 transition-all border border-slate-700/50 hover:border-slate-600/50">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                      :class="trace.hasError ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-green-500 shadow-lg shadow-green-500/50'"></span>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-medium truncate text-slate-200" x-text="getTraceName(trace)"></div>
+                                    <div class="text-xs text-slate-500" x-text="trace.serviceName"></div>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-4">
+                                <div class="text-sm font-mono" :class="trace.durationMs > 1000 ? 'text-amber-400' : 'text-slate-400'" x-text="trace.durationMs + 'ms'"></div>
+                                <div class="text-xs text-slate-500" x-text="formatTime(trace.startTime)"></div>
+                            </div>
+                        </a>
+                    </template>
+                    <div x-show="recentTraces.length === 0" class="text-center py-8 text-slate-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        No traces recorded yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Errors -->
+            <div class="glass-card rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-100">Recent Errors</h2>
+                    </div>
+                    <a href="{{BASE_PATH}}/logs?level=ERROR" class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">View all →</a>
+                </div>
+                <div class="space-y-2">
+                    <template x-for="log in recentErrors" :key="log.id">
+                        <div class="p-3 bg-red-950/30 border border-red-900/30 rounded-lg hover:bg-red-950/40 transition-all">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="text-sm text-red-400 truncate font-medium" x-text="log.message"></div>
+                                    <div class="text-xs text-slate-500 mt-1 font-mono" x-text="log.logger"></div>
+                                </div>
+                                <div class="text-xs text-slate-500 flex-shrink-0 font-mono" x-text="formatTime(log.timestamp)"></div>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="recentErrors.length === 0" class="text-center py-8 text-slate-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        No errors recorded
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Components -->
+        <div class="glass-card rounded-xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold text-slate-100">Health Components</h2>
+                </div>
+                <a href="{{BASE_PATH}}/health" class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">View details →</a>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <template x-for="component in health.components" :key="component.name">
+                    <div class="flex items-center gap-3 p-3 rounded-lg border transition-all"
+                         :class="component.healthy ? 'bg-green-950/20 border-green-900/30 hover:bg-green-950/30' : 'bg-red-950/20 border-red-900/30 hover:bg-red-950/30'">
+                        <span class="text-xl" x-text="component.statusEmoji || (component.healthy ? '✓' : '✕')"></span>
+                        <div class="min-w-0">
+                            <div class="text-sm font-medium truncate text-slate-200" x-text="component.displayName || component.name"></div>
+                            <div class="text-xs font-medium" :class="component.healthy ? 'text-green-400' : 'text-red-400'" x-text="component.status"></div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="!health.components || health.components.length === 0" class="col-span-full text-center py-6 text-slate-500">
+                    <svg class="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    No health components configured
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="glass-card rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold text-slate-100">Metrics Overview</h2>
+                </div>
+                <a href="{{BASE_PATH}}/metrics" class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">View all →</a>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-colors group relative">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <div class="text-slate-400 text-xs font-medium">Counters</div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 right-0 -bottom-16 z-10 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl">
+                            Valor que só aumenta. Ex: total de requisições, erros.
+                        </div>
+                    </div>
+                    <div class="text-2xl font-bold text-blue-400" x-text="metrics.counterCount || 0"></div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 hover:border-green-500/30 transition-colors group relative">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        <div class="text-slate-400 text-xs font-medium">Gauges</div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 right-0 -bottom-16 z-10 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl">
+                            Valor instantâneo que sobe/desce. Ex: memória, threads ativas.
+                        </div>
+                    </div>
+                    <div class="text-2xl font-bold text-green-400" x-text="metrics.gaugeCount || 0"></div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 hover:border-purple-500/30 transition-colors group relative">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                        <div class="text-slate-400 text-xs font-medium">Timers</div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 right-0 -bottom-16 z-10 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl">
+                            Mede duração de eventos. Ex: latência HTTP, tempo de query.
+                        </div>
+                    </div>
+                    <div class="text-2xl font-bold text-purple-400" x-text="metrics.timerCount || 0"></div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50 hover:border-orange-500/30 transition-colors group relative">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                        <div class="text-slate-400 text-xs font-medium">Distributions</div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 right-0 -bottom-16 z-10 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl">
+                            Histograma de valores. Ex: tamanho de payload, itens em batch.
+                        </div>
+                    </div>
+                    <div class="text-2xl font-bold text-orange-400" x-text="metrics.distributionCount || 0"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-10 text-center">
+            <div class="flex items-center justify-center gap-2 text-slate-500 text-sm">
+                <span class="gradient-text font-semibold">J-Obs</span>
+                <span>•</span>
+                <span>Java Observability Library</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                refreshInterval: 5,
+                health: { healthy: true, statusDisplayName: 'Loading...', components: [] },
+                traces: { total: 0, errorCount: 0 },
+                logs: { total: 0, errorCount: 0 },
+                metrics: { counterCount: 0, gaugeCount: 0, timerCount: 0, distributionCount: 0 },
+                recentTraces: [],
+                recentErrors: [],
+                requestRate: { points: [], totalRequests: 0, avgPerMinute: 0 },
+                topEndpoints: [],
+                maxEndpointLatency: 100,
+                requestRateChart: null,
+
+                init() {
+                    this.initChart();
+                    this.loadAll();
+                    setInterval(() => this.loadAll(), this.refreshInterval * 1000);
+                },
+
+                initChart() {
+                    const ctx = document.getElementById('requestRateChart')?.getContext('2d');
+                    if (!ctx) return;
+
+                    this.requestRateChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Requests',
+                                data: [],
+                                borderColor: 'rgb(34, 211, 238)',
+                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 3,
+                                pointHoverRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255,255,255,0.05)' },
+                                    ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(255,255,255,0.05)' },
+                                    ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } }
+                                }
+                            }
+                        }
+                    });
+                },
+
+                loadAll() {
+                    this.loadHealth();
+                    this.loadTraces();
+                    this.loadLogs();
+                    this.loadMetrics();
+                    this.loadRequestRate();
+                    this.loadTopEndpoints();
+                },
+
+                loadHealth() {
+                    fetch('{{BASE_PATH}}/api/health')
+                        .then(res => res.json())
+                        .then(data => { this.health = data; })
+                        .catch(() => {});
+                },
+
+                loadTraces() {
+                    fetch('{{BASE_PATH}}/api/traces?limit=5')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.traces = { total: data.total, errorCount: data.errorCount || 0 };
+                            this.recentTraces = data.traces || [];
+                        })
+                        .catch(() => {});
+                },
+
+                loadLogs() {
+                    fetch('{{BASE_PATH}}/api/logs/stats')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.logs = { total: data.totalEntries || 0, errorCount: data.errorCount || 0 };
+                        })
+                        .catch(() => {});
+
+                    fetch('{{BASE_PATH}}/api/logs?level=ERROR&limit=5')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.recentErrors = data.logs || [];
+                        })
+                        .catch(() => {});
+                },
+
+                loadMetrics() {
+                    fetch('{{BASE_PATH}}/api/metrics/stats')
+                        .then(res => res.json())
+                        .then(data => { this.metrics = data; })
+                        .catch(() => {});
+                },
+
+                loadRequestRate() {
+                    fetch('{{BASE_PATH}}/api/traces/request-rate?minutes=5')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.requestRate = data;
+                            this.updateRequestRateChart(data.points || []);
+                        })
+                        .catch(() => {});
+                },
+
+                updateRequestRateChart(points) {
+                    if (!this.requestRateChart) return;
+
+                    const labels = points.map(p => {
+                        const date = new Date(p.timestamp);
+                        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    });
+                    const data = points.map(p => p.count);
+
+                    this.requestRateChart.data.labels = labels;
+                    this.requestRateChart.data.datasets[0].data = data;
+                    this.requestRateChart.update('none');
+                },
+
+                loadTopEndpoints() {
+                    fetch('{{BASE_PATH}}/api/traces/top-endpoints?limit=5&sortBy=latency')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.topEndpoints = data.endpoints || [];
+                            if (this.topEndpoints.length > 0) {
+                                this.maxEndpointLatency = Math.max(...this.topEndpoints.map(e => e.avgLatencyMs), 100);
+                            }
+                        })
+                        .catch(() => {});
+                },
+
+                formatTime(timestamp) {
+                    if (!timestamp) return '';
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                },
+
+                getTraceName(trace) {
+                    if (trace.httpMethod && trace.httpUrl) {
+                        let url = trace.httpUrl;
+                        try {
+                            const urlObj = new URL(url, 'http://localhost');
+                            url = urlObj.pathname;
+                        } catch (e) {}
+                        return trace.httpMethod + ' ' + url;
+                    }
+                    return trace.name || trace.traceId?.substring(0, 8) || 'Unknown';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

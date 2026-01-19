@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: j-obs-sample
+
+server:
+  port: 8080
+
+# Spring Boot Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# J-Obs Configuration
+j-obs:
+  enabled: true
+  path: /j-obs
+  check-interval: 5m
+
+  dashboard:
+    refresh-interval: 5s
+    theme: system
+
+  traces:
+    enabled: true
+    max-traces: 10000
+    retention: 1h
+    sample-rate: 1.0
+
+  logs:
+    enabled: true
+    max-entries: 10000
+    min-level: DEBUG
+
+  metrics:
+    enabled: true
+    refresh-interval: 5000
+    max-history-points: 360
+
+  health:
+    enabled: true
+    max-history-entries: 100
+
+  # Automatic instrumentation
+  instrumentation:
+    traced-annotation: true      # Enable @Traced annotation
+    measured-annotation: true    # Enable @Measured annotation
+    http-tracing: true           # Auto-trace HTTP requests
+    auto-instrument: false       # Auto-instrument all @Service/@Repository (disabled by default)
+
+# Logging
+logging:
+  level:
+    root: INFO
+    io.github.jobs.sample: DEBUG
+    io.github.jobs: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

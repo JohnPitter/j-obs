@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - Traces</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .gradient-border:hover::before { opacity: 1; }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after { width: 80%; }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .waterfall-bar { transition: all 0.2s; }
+        .waterfall-bar:hover { filter: brightness(1.2); }
+    </style>
+</head>
+<body class="bg-slate-950 text-gray-100 min-h-screen" x-data="tracesApp()">
+    <!-- Gradient Background -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10"></div>
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L2c+PC9zdmc+')] opacity-40 -z-10"></div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+            </div>
+            <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                <a href="{{BASE_PATH}}" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Overview</a>
+                <a href="{{BASE_PATH}}/logs" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Logs</a>
+                <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">Traces</span>
+                <a href="{{BASE_PATH}}/metrics" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Metrics</a>
+                <a href="{{BASE_PATH}}/health" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Health</a>
+                <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Alerts</a>
+                <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50">Tools</a>
+            </nav>
+        </header>
+
+        <!-- Filters -->
+        <div class="glass-card rounded-xl p-4 mb-6">
+            <div class="flex gap-4 flex-wrap items-end">
+                <div>
+                    <label class="block text-sm text-slate-400 font-medium mb-1.5">Service</label>
+                    <select x-model="filters.service" @change="loadTraces()" class="bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm">
+                        <option value="">All Services</option>
+                        <template x-for="svc in services">
+                            <option :value="svc" x-text="svc"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 font-medium mb-1.5">Status</label>
+                    <select x-model="filters.status" @change="loadTraces()" class="bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm">
+                        <option value="">All</option>
+                        <option value="OK">Success</option>
+                        <option value="ERROR">Error</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 font-medium mb-1.5">Min Duration (ms)</label>
+                    <input type="number" x-model="filters.minDurationMs" @change="loadTraces()"
+                           class="bg-slate-800 border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm w-24" placeholder="0">
+                </div>
+                <div>
+                    <button @click="resetFilters()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
+                        Reset
+                    </button>
+                </div>
+                <div class="ml-auto">
+                    <button @click="loadTraces()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg text-sm font-medium shadow-lg transition-all">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="glass-card gradient-border p-5 rounded-xl">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Total Traces</span>
+                </div>
+                <div class="text-2xl font-bold text-slate-100" x-text="stats.totalTraces">--</div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Error Rate</span>
+                </div>
+                <div class="text-2xl font-bold" :class="stats.errorRate > 5 ? 'text-red-400' : 'text-green-400'"
+                     x-text="stats.errorRate.toFixed(1) + '%'">--</div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">Avg Duration</span>
+                </div>
+                <div class="text-2xl font-bold text-slate-100 font-mono" x-text="stats.avgDurationMs.toFixed(0) + 'ms'">--</div>
+            </div>
+            <div class="glass-card gradient-border p-5 rounded-xl">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 text-sm font-medium">P99 Duration</span>
+                </div>
+                <div class="text-2xl font-bold text-slate-100 font-mono" x-text="stats.p99DurationMs.toFixed(0) + 'ms'">--</div>
+            </div>
+        </div>
+
+        <!-- Traces Table -->
+        <div class="glass-card rounded-xl overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-slate-800/80">
+                    <tr>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Trace</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Service</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Duration</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Spans</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Time</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/50">
+                    <template x-for="trace in traces" :key="trace.traceId">
+                        <tr class="hover:bg-indigo-500/5 cursor-pointer transition-colors"
+                            @click="window.location.href='{{BASE_PATH}}/traces/' + trace.traceId">
+                            <td class="py-3 px-4">
+                                <div class="font-medium text-slate-200" x-text="trace.name"></div>
+                                <div class="text-xs text-slate-500 font-mono" x-text="trace.traceId.substring(0,16) + '...'"></div>
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-400" x-text="trace.serviceName || '-'"></td>
+                            <td class="py-3 px-4">
+                                <span class="font-mono text-slate-300" x-text="trace.durationMs + 'ms'"></span>
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-400" x-text="trace.spanCount"></td>
+                            <td class="py-3 px-4">
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold"
+                                      :class="trace.hasError ? 'bg-red-950/50 text-red-400 border border-red-900/50' : 'bg-green-950/50 text-green-400 border border-green-900/50'"
+                                      x-text="trace.hasError ? 'Error' : 'OK'"></span>
+                            </td>
+                            <td class="py-3 px-4 text-sm text-slate-500 font-mono" x-text="formatTime(trace.startTime)"></td>
+                        </tr>
+                    </template>
+                    <tr x-show="traces.length === 0">
+                        <td colspan="6" class="py-12 text-center text-slate-500">
+                            <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            No traces found. Traces will appear here when your application receives requests.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-between items-center mt-4 glass-card rounded-xl p-4">
+            <div class="text-sm text-slate-400">
+                Showing <span class="text-slate-200 font-medium" x-text="traces.length > 0 ? offset + 1 : 0"></span>-<span class="text-slate-200 font-medium" x-text="Math.min(offset + limit, total)"></span> of <span class="text-slate-200 font-medium" x-text="total"></span> traces
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Per page:</label>
+                    <select x-model="limit" @change="offset = 0; loadTraces()" class="bg-slate-800 border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200">
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="flex gap-1">
+                    <button @click="offset = 0; loadTraces()" :disabled="offset === 0"
+                            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        First
+                    </button>
+                    <button @click="prevPage()" :disabled="offset === 0"
+                            class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Prev
+                    </button>
+                    <span class="px-4 py-1.5 text-sm text-slate-300 font-medium" x-text="'Page ' + currentPage + ' of ' + totalPages"></span>
+                    <button @click="nextPage()" :disabled="offset + limit >= total"
+                            class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Next
+                    </button>
+                    <button @click="lastPage()" :disabled="offset + limit >= total"
+                            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        Last
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function tracesApp() {
+            return {
+                traces: [],
+                services: [],
+                stats: { totalTraces: 0, errorRate: 0, avgDurationMs: 0, p99DurationMs: 0 },
+                total: 0,
+                limit: 50,
+                offset: 0,
+                filters: { service: '', status: '', minDurationMs: '' },
+
+                get currentPage() {
+                    return Math.floor(this.offset / this.limit) + 1;
+                },
+
+                get totalPages() {
+                    return Math.max(1, Math.ceil(this.total / this.limit));
+                },
+
+                init() {
+                    this.loadServices();
+                    this.loadStats();
+                    this.loadTraces();
+                },
+
+                async loadTraces() {
+                    const params = new URLSearchParams({ limit: this.limit, offset: this.offset });
+                    if (this.filters.service) params.set('service', this.filters.service);
+                    if (this.filters.status) params.set('status', this.filters.status);
+                    if (this.filters.minDurationMs) params.set('minDurationMs', this.filters.minDurationMs);
+
+                    const res = await fetch('{{BASE_PATH}}/api/traces?' + params);
+                    const data = await res.json();
+                    this.traces = data.traces;
+                    this.total = data.total;
+                },
+
+                async loadServices() {
+                    const res = await fetch('{{BASE_PATH}}/api/traces/services');
+                    this.services = await res.json();
+                },
+
+                async loadStats() {
+                    const res = await fetch('{{BASE_PATH}}/api/traces/stats');
+                    const data = await res.json();
+                    this.stats = {
+                        totalTraces: data.totalTraces,
+                        errorRate: data.totalTraces > 0 ? (data.errorTraces / data.totalTraces) * 100 : 0,
+                        avgDurationMs: data.avgDurationMs || 0,
+                        p99DurationMs: data.p99DurationMs || 0
+                    };
+                },
+
+                resetFilters() {
+                    this.filters = { service: '', status: '', minDurationMs: '' };
+                    this.offset = 0;
+                    this.loadTraces();
+                },
+
+                prevPage() {
+                    this.offset = Math.max(0, this.offset - this.limit);
+                    this.loadTraces();
+                },
+
+                nextPage() {
+                    if (this.offset + this.limit < this.total) {
+                        this.offset += this.limit;
+                        this.loadTraces();
+                    }
+                },
+
+                lastPage() {
+                    this.offset = Math.floor((this.total - 1) / this.limit) * this.limit;
+                    this.loadTraces();
+                },
+
+                formatTime(isoString) {
+                    return new Date(isoString).toLocaleTimeString();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Obs - SQL Analyzer</title>
+    <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            color: #a78bfa;
+        }
+        .gradient-border:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .nav-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .issue-card {
+            transition: all 0.3s ease;
+        }
+        .issue-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        [x-cloak] { display: none !important; }
+        .code-block {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-gray-100" x-data="sqlAnalyzerApp()" x-init="init()">
+    <!-- Background gradient -->
+    <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 -z-10"></div>
+    <div class="fixed inset-0 -z-10 opacity-30">
+        <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+        </svg>
+    </div>
+
+    <div class="min-h-full p-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <header class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
+                </div>
+                <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
+                    <a href="{{BASE_PATH}}" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Overview</a>
+                    <a href="{{BASE_PATH}}/logs" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Logs</a>
+                    <a href="{{BASE_PATH}}/traces" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Traces</a>
+                    <a href="{{BASE_PATH}}/metrics" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Metrics</a>
+                    <a href="{{BASE_PATH}}/health" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Health</a>
+                    <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Alerts</a>
+                    <span class="nav-active px-4 py-2 rounded-lg text-sm font-medium text-white">SQL</span>
+                    <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Tools</a>
+                </nav>
+                <button @click="analyze()"
+                        :disabled="loading"
+                        class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-indigo-500/25 flex items-center gap-2 disabled:opacity-50">
+                    <svg x-show="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-text="loading ? 'Analyzing...' : 'Analyze'"></span>
+                </button>
+            </header>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card gradient-border rounded-xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30">
+                            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-400">Total Issues</div>
+                            <div class="text-2xl font-bold text-white" x-text="stats.totalIssues">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card gradient-border rounded-xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center border border-red-500/30">
+                            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-400">Critical</div>
+                            <div class="text-2xl font-bold text-red-400" x-text="stats.criticalIssues">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card gradient-border rounded-xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center border border-amber-500/30">
+                            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-400">N+1 Detected</div>
+                            <div class="text-2xl font-bold text-amber-400" x-text="stats.nPlusOneDetected">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card gradient-border rounded-xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center border border-orange-500/30">
+                            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-400">Slow Queries</div>
+                            <div class="text-2xl font-bold text-orange-400" x-text="stats.slowQueriesDetected">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-6">
+                <button @click="activeTab = 'issues'"
+                        :class="activeTab === 'issues' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+                    Issues
+                    <span x-show="issues.length > 0" class="px-1.5 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full" x-text="issues.length"></span>
+                </button>
+                <button @click="activeTab = 'slow'; loadSlowQueries()"
+                        :class="activeTab === 'slow' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    Slow Queries
+                </button>
+                <button @click="activeTab = 'top'; loadTopQueries()"
+                        :class="activeTab === 'top' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    Top Queries
+                </button>
+            </div>
+
+            <!-- Issues Tab -->
+            <div x-show="activeTab === 'issues'" class="glass-card rounded-xl overflow-hidden">
+                <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center border border-red-500/30">
+                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-white">Detected SQL Issues</h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select x-model="issueFilter" @change="filterIssues()"
+                                class="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500/50">
+                            <option value="">All Types</option>
+                            <template x-for="type in problemTypes" :key="type.name">
+                                <option :value="type.name" x-text="type.displayName"></option>
+                            </template>
+                        </select>
+                        <button @click="clearIssues()" x-show="issues.length > 0"
+                                class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-700/50 text-slate-300 hover:bg-slate-700 transition-colors">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-slate-700/50">
+                    <template x-for="issue in filteredIssues" :key="issue.id">
+                        <div class="issue-card p-5 hover:bg-slate-800/50 transition-colors">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap mb-2">
+                                        <span class="px-2.5 py-1 text-xs font-medium rounded-lg"
+                                              :class="issue.severity === 'critical' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'"
+                                              x-text="issue.typeDisplayName"></span>
+                                        <span class="text-xs text-slate-500" x-text="issue.endpoint || 'Unknown endpoint'"></span>
+                                        <span class="text-xs text-slate-600">·</span>
+                                        <span class="text-xs text-slate-500" x-text="formatDuration(issue.durationMs)"></span>
+                                        <span x-show="issue.occurrences > 1" class="px-2 py-0.5 text-xs bg-slate-700/50 text-slate-400 rounded">
+                                            <span x-text="issue.occurrences"></span>x occurrences
+                                        </span>
+                                    </div>
+
+                                    <div class="code-block px-4 py-3 rounded-lg text-sm text-slate-300 overflow-x-auto mb-3">
+                                        <code x-text="issue.query"></code>
+                                    </div>
+
+                                    <div x-show="issue.suggestion" class="flex items-start gap-2 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                                        <svg class="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                        </svg>
+                                        <p class="text-sm text-indigo-300 whitespace-pre-wrap" x-text="issue.suggestion"></p>
+                                    </div>
+
+                                    <div class="mt-3 flex items-center gap-3 text-xs text-slate-500">
+                                        <span x-show="issue.dbSystem" class="px-2 py-0.5 bg-slate-800/50 rounded" x-text="issue.dbSystem"></span>
+                                        <a x-show="issue.traceId" :href="'{{BASE_PATH}}/traces/' + issue.traceId"
+                                           class="text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                            </svg>
+                                            View Trace
+                                        </a>
+                                        <span x-text="'Detected: ' + new Date(issue.detectedAt).toLocaleString()"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="filteredIssues.length === 0" class="p-12 text-center">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center mb-4 border border-green-500/30">
+                            <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">No SQL issues detected</h3>
+                        <p class="text-slate-400 text-sm mb-6">Click "Analyze" to scan recent traces for SQL anti-patterns.</p>
+                        <button @click="analyze()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-lg shadow-indigo-500/25">
+                            Run Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slow Queries Tab -->
+            <div x-show="activeTab === 'slow'" class="glass-card rounded-xl overflow-hidden">
+                <div class="p-5 border-b border-slate-700/50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center border border-orange-500/30">
+                            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-white">Slow Queries</h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-400">Threshold:</span>
+                        <select x-model="slowThreshold" @change="loadSlowQueries()"
+                                class="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500/50">
+                            <option value="500ms">500ms</option>
+                            <option value="1s">1s</option>
+                            <option value="2s">2s</option>
+                            <option value="5s">5s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-800/30">
+                            <tr>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Query</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Duration</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">DB</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Endpoint</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50">
+                            <template x-for="query in slowQueries" :key="query.spanId">
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-5 py-4">
+                                        <div class="code-block px-3 py-2 rounded text-xs text-slate-300 max-w-md truncate" :title="query.statement" x-text="query.statement"></div>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span class="px-2 py-1 text-xs font-medium rounded"
+                                              :class="query.durationMs >= 5000 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'"
+                                              x-text="formatDuration(query.durationMs)"></span>
+                                    </td>
+                                    <td class="px-5 py-4 text-sm text-slate-300" x-text="query.dbSystem || '-'"></td>
+                                    <td class="px-5 py-4 text-sm text-slate-400 truncate max-w-xs" x-text="query.endpoint || '-'"></td>
+                                    <td class="px-5 py-4 text-xs text-slate-500" x-text="new Date(query.executedAt).toLocaleString()"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <div x-show="slowQueries.length === 0" class="p-12 text-center">
+                        <p class="text-slate-400">No slow queries found in the selected time window.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Queries Tab -->
+            <div x-show="activeTab === 'top'" class="glass-card rounded-xl overflow-hidden">
+                <div class="p-5 border-b border-slate-700/50 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold text-white">Top Queries by Execution Count</h2>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-800/30">
+                            <tr>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Query</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Executions</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Avg</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">P50</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">P95</th>
+                                <th class="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">P99</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50">
+                            <template x-for="(query, index) in topQueries" :key="index">
+                                <tr class="hover:bg-slate-800/50 transition-colors">
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 text-xs font-medium rounded bg-indigo-500/20 text-indigo-400" x-text="query.operation"></span>
+                                            <div class="code-block px-3 py-2 rounded text-xs text-slate-300 max-w-md truncate" :title="query.normalizedQuery" x-text="query.normalizedQuery"></div>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span class="text-lg font-semibold text-white" x-text="query.executionCount"></span>
+                                    </td>
+                                    <td class="px-5 py-4 text-sm text-slate-300" x-text="query.avgDurationMs.toFixed(1) + 'ms'"></td>
+                                    <td class="px-5 py-4 text-sm text-slate-400" x-text="query.p50DurationMs + 'ms'"></td>
+                                    <td class="px-5 py-4 text-sm text-slate-400" x-text="query.p95DurationMs + 'ms'"></td>
+                                    <td class="px-5 py-4">
+                                        <span class="px-2 py-1 text-xs font-medium rounded"
+                                              :class="query.p99DurationMs >= 1000 ? 'bg-red-500/20 text-red-400' : 'bg-slate-700/50 text-slate-300'"
+                                              x-text="query.p99DurationMs + 'ms'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <div x-show="topQueries.length === 0" class="p-12 text-center">
+                        <p class="text-slate-400">No queries found in the selected time window.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sqlAnalyzerApp() {
+            return {
+                issues: [],
+                filteredIssues: [],
+                slowQueries: [],
+                topQueries: [],
+                problemTypes: [],
+                stats: {
+                    totalIssues: 0,
+                    criticalIssues: 0,
+                    nPlusOneDetected: 0,
+                    slowQueriesDetected: 0
+                },
+                activeTab: 'issues',
+                issueFilter: '',
+                slowThreshold: '1s',
+                loading: false,
+
+                async init() {
+                    await Promise.all([
+                        this.loadProblemTypes(),
+                        this.loadStats(),
+                        this.loadIssues()
+                    ]);
+                },
+
+                async analyze() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/analyze?window=1h');
+                        const data = await res.json();
+                        this.issues = data.issues || [];
+                        this.filteredIssues = this.issues;
+                        await this.loadStats();
+                    } catch (e) {
+                        console.error('Analysis failed:', e);
+                    }
+                    this.loading = false;
+                },
+
+                async loadIssues() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/issues');
+                        const data = await res.json();
+                        this.issues = data.issues || [];
+                        this.filteredIssues = this.issues;
+                    } catch (e) {
+                        this.issues = [];
+                        this.filteredIssues = [];
+                    }
+                },
+
+                async loadStats() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/stats');
+                        this.stats = await res.json();
+                    } catch (e) {
+                        this.stats = {
+                            totalIssues: 0,
+                            criticalIssues: 0,
+                            nPlusOneDetected: 0,
+                            slowQueriesDetected: 0
+                        };
+                    }
+                },
+
+                async loadProblemTypes() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/problem-types');
+                        this.problemTypes = await res.json();
+                    } catch (e) {
+                        this.problemTypes = [];
+                    }
+                },
+
+                async loadSlowQueries() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/slow-queries?threshold=' + this.slowThreshold + '&window=1h');
+                        const data = await res.json();
+                        this.slowQueries = data.queries || [];
+                    } catch (e) {
+                        this.slowQueries = [];
+                    }
+                },
+
+                async loadTopQueries() {
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/sql/top-queries?limit=20&window=1h');
+                        const data = await res.json();
+                        this.topQueries = data.queries || [];
+                    } catch (e) {
+                        this.topQueries = [];
+                    }
+                },
+
+                filterIssues() {
+                    if (!this.issueFilter) {
+                        this.filteredIssues = this.issues;
+                    } else {
+                        this.filteredIssues = this.issues.filter(i => i.type === this.issueFilter);
+                    }
+                },
+
+                async clearIssues() {
+                    if (confirm('Are you sure you want to clear all detected issues?')) {
+                        await fetch('{{BASE_PATH}}/api/sql/issues', { method: 'DELETE' });
+                        this.issues = [];
+                        this.filteredIssues = [];
+                        await this.loadStats();
+                    }
+                },
+
+                formatDuration(ms) {
+                    if (ms >= 1000) {
+                        return (ms / 1000).toFixed(2) + 's';
+                    }
+                    return ms + 'ms';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
