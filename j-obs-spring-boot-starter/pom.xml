@@ -6,9 +6,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.github.j-obs</groupId>
+        <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-parent</artifactId>
-        <version>1.0.3</version>
+        <version>1.0.4</version>
     </parent>
 
     <artifactId>j-obs-spring-boot-starter</artifactId>
@@ -20,7 +20,7 @@
     <dependencies>
         <!-- Project modules -->
         <dependency>
-            <groupId>io.github.j-obs</groupId>
+            <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-core</artifactId>
         </dependency>
 

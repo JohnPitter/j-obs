@@ -5,9 +5,9 @@
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.j-obs</groupId>
+    <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-parent</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <packaging>pom</packaging>
 
     <name>J-Obs Parent</name>
@@ -103,7 +103,7 @@
 
             <!-- Project modules -->
             <dependency>
-                <groupId>io.github.j-obs</groupId>
+                <groupId>io.github.johnpitter</groupId>
                 <artifactId>j-obs-core</artifactId>
                 <version>${project.version}</version>
             </dependency>

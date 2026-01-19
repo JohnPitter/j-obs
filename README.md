@@ -132,7 +132,7 @@ After installation, the artifacts will be available in your local `~/.m2/reposit
 
 ```xml
 <dependency>
-    <groupId>io.github.j-obs</groupId>
+    <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -155,7 +155,7 @@ Then add the dependency:
 
 ```xml
 <dependency>
-    <groupId>io.github.j-obs</groupId>
+    <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -804,7 +804,7 @@ j-obs:
 **Solution:** This was fixed in v1.0.1. Update to the latest version:
 ```xml
 <dependency>
-    <groupId>io.github.j-obs</groupId>
+    <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
     <version>1.0.1</version>
 </dependency>
@@ -839,7 +839,7 @@ mvn clean install -DskipTests
 ```xml
 <dependencies>
     <dependency>
-        <groupId>io.github.j-obs</groupId>
+        <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-spring-boot-starter</artifactId>
         <version>1.0.1</version>
     </dependency>

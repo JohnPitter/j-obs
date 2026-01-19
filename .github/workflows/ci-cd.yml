@@ -169,7 +169,7 @@ jobs:
 
             ```xml
             <dependency>
-                <groupId>io.github.j-obs</groupId>
+                <groupId>io.github.johnpitter</groupId>
                 <artifactId>j-obs-spring-boot-starter</artifactId>
                 <version>${{ steps.version.outputs.VERSION }}</version>
             </dependency>
@@ -301,10 +301,10 @@ jobs:
           echo "### Published to Maven Central! :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Artifacts:**" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.j-obs:j-obs-core:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`io.github.j-obs:j-obs-spring-boot-starter:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.johnpitter:j-obs-core:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`io.github.johnpitter:j-obs-spring-boot-starter:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Available at: https://search.maven.org/search?q=g:io.github.j-obs" >> $GITHUB_STEP_SUMMARY
+          echo "Available at: https://search.maven.org/search?q=g:io.github.johnpitter" >> $GITHUB_STEP_SUMMARY
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
 

@@ -30,7 +30,7 @@ Este guia mostra como integrar o J-Obs em uma aplicação Spring Boot existente 
 
 ```xml
 <dependency>
-    <groupId>io.github.j-obs</groupId>
+    <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
@@ -39,7 +39,7 @@ Este guia mostra como integrar o J-Obs em uma aplicação Spring Boot existente 
 **Gradle (`build.gradle`):**
 
 ```groovy
-implementation 'io.github.j-obs:j-obs-spring-boot-starter:1.0.0-SNAPSHOT'
+implementation 'io.github.johnpitter:j-obs-spring-boot-starter:1.0.0-SNAPSHOT'
 ```
 
 ### Passo 2: Adicionar Dependências Obrigatórias
