@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-01-18
 
 ### Added
 - **Sample Application (`j-obs-sample`)** - Complete demonstration project
@@ -466,11 +466,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic cache invalidation on refresh()
 - **Graceful Shutdown**: Ensured proper cleanup of TraceRepository background tasks
 
-## [1.0.0] - TBD
-
-Initial release planned with:
-- Dependency verification and dashboard
-- Real-time logs streaming
-- Trace visualization
-- Metrics display
-- Health checks dashboard
