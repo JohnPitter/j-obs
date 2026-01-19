@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.github.j-obs</groupId>
         <artifactId>j-obs-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>j-obs-spring-boot-starter</artifactId>
@@ -77,10 +77,11 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- WebSocket for real-time streaming -->
+        <!-- WebSocket for real-time streaming (optional) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Testing -->

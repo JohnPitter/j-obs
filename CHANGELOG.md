@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-01-19
+
+### Fixed
+- **WebSocket Optional Dependency** - WebSocket support is now properly optional
+  - Extracted WebSocket configuration to inner class with `@ConditionalOnClass`
+  - Added conditional check for both `WebSocketConfigurer` and `ServerContainer`
+  - Fixed failure in test environments using `MockServletContext`
+  - Made `spring-boot-starter-websocket` dependency optional in POM
+- **Test Environment Compatibility** - J-Obs now works correctly in Spring Boot test contexts
+  - Previously failed with "WebSocketConfigurer not found" error
+  - Now gracefully degrades when WebSocket is not available
+  - Core functionality (logs, traces, metrics) works without WebSocket
+
+### Added
+- **JObsLogAutoConfigurationTest** - New test class verifying auto-configuration behavior
+  - Tests for proper bean creation
+  - Tests for working without WebSocket support
+  - Tests for property configuration
+
 ## [1.0.0] - 2026-01-18
 
 ### Added

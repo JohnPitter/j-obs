@@ -15,18 +15,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 /**
  * Auto-configuration for J-Obs log collection and real-time streaming.
+ * <p>
+ * WebSocket support is optional and will only be enabled when WebSocket
+ * classes are available on the classpath.
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
-@EnableWebSocket
-public class JObsLogAutoConfiguration implements WebSocketConfigurer {
+public class JObsLogAutoConfiguration {
 
     private final JObsProperties properties;
 
@@ -52,26 +55,52 @@ public class JObsLogAutoConfiguration implements WebSocketConfigurer {
         return new LogApiController(logRepository);
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public LogWebSocketHandler logWebSocketHandler(LogRepository logRepository) {
-        return new LogWebSocketHandler(logRepository);
-    }
+    /**
+     * Configuration for WebSocket support (optional).
+     * <p>
+     * This configuration is only loaded when WebSocket classes are available
+     * on the classpath AND a ServerContainer is present (not available in
+     * MockServletContext test environments).
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = {
+        "org.springframework.web.socket.config.annotation.WebSocketConfigurer",
+        "jakarta.websocket.server.ServerContainer"
+    })
+    @EnableWebSocket
+    static class WebSocketConfiguration implements WebSocketConfigurer {
 
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        String wsPath = properties.getPath() + "/ws/logs";
-        registry.addHandler(logWebSocketHandler(logRepository()), wsPath)
-                .setAllowedOrigins("*");
+        private final JObsProperties properties;
+        private final LogRepository logRepository;
+
+        WebSocketConfiguration(JObsProperties properties, LogRepository logRepository) {
+            this.properties = properties;
+            this.logRepository = logRepository;
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public LogWebSocketHandler logWebSocketHandler() {
+            return new LogWebSocketHandler(logRepository);
+        }
+
+        @Override
+        public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+            String wsPath = properties.getPath() + "/ws/logs";
+            registry.addHandler(logWebSocketHandler(), wsPath)
+                    .setAllowedOrigins("*");
+        }
     }
 
     /**
-     * Configuration for Logback integration.
+     * Configuration for Logback integration (optional).
      */
+    @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass(name = "ch.qos.logback.classic.Logger")
     static class LogbackConfiguration {
 
         @Bean
+        @ConditionalOnMissingBean
         public JObsLogAppender jObsLogAppender(LogRepository logRepository) {
             JObsLogAppender appender = new JObsLogAppender();
             appender.setLogRepository(logRepository);
