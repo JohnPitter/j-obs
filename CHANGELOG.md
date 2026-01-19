@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-01-19
+
+### Fixed
+- **Maven Central Publishing** - Fixed configuration that was preventing actual publication
+  - Removed deprecated `tokenAuth` parameter from `central-publishing-maven-plugin`
+  - Changed sample module configuration from `skipPublishing` to `excludeArtifacts`
+  - Added explicit skip configurations for GPG, Javadoc, and Source plugins in sample module
+  - Sample module artifacts are now properly excluded without blocking entire publication
+
 ## [1.0.2] - 2026-01-19
 
 ### Added

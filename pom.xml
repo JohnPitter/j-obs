@@ -7,7 +7,7 @@
 
     <groupId>io.github.j-obs</groupId>
     <artifactId>j-obs-parent</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>pom</packaging>
 
     <name>J-Obs Parent</name>
@@ -237,10 +237,8 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <tokenAuth>true</tokenAuth>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
-                            <checksums>required</checksums>
                         </configuration>
                     </plugin>
                 </plugins>
