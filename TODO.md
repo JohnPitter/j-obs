@@ -201,6 +201,33 @@ Este arquivo lista as melhorias identificadas que ainda precisam ser implementad
 - Flush automático após tempo de espera
 - Mensagem de resumo para grupos com múltiplos alertas
 
+### ✅ DONE - Sample Application (j-obs-sample)
+**Descrição:** Aplicação de exemplo demonstrando todas as funcionalidades do J-Obs.
+**Arquivos:** `j-obs-sample/src/main/java/io/github/jobs/sample/*`
+**Implementado:**
+- `ActivityGenerator` com geração automática de dados de observabilidade
+- Services: `OrderService`, `InventoryService`, `PaymentService`, `NotificationService`
+- Health Indicators: Inventory, DiskSpace, Kafka, Cache, Payment, Database
+- Domain models: `Order`, `OrderItem`, `OrderStatus`
+- Configuração completa em `application.yml`
+
+### ✅ DONE - Dashboard Request Rate Chart
+**Descrição:** Gráfico de taxa de requisições em tempo real.
+**Arquivos:** `index.html`, `TraceApiController.java`
+**Implementado:**
+- Chart.js line chart com dados dos últimos 5 minutos
+- Auto-refresh a cada 5 segundos
+- Fallback UI quando não há dados
+- Fix de reatividade Alpine.js/Chart.js
+
+### ✅ DONE - Top Endpoints Widget
+**Descrição:** Widget mostrando os 5 endpoints mais lentos.
+**Arquivos:** `index.html`, `TraceApiController.java`
+**Implementado:**
+- Lista ordenada por latência
+- Mostra contagem de chamadas e erros
+- Barra visual de latência proporcional
+
 ### 🔵 FEATURE - Alert Acknowledge/Resolve
 **Descrição:** Permitir acknowledge e resolve de alertas via UI.
 **Status:** API existe, UI incompleta
@@ -218,7 +245,7 @@ Este arquivo lista as melhorias identificadas que ainda precisam ser implementad
 
 ## Resumo de Progresso
 
-### Concluídos (18 itens)
+### Concluídos (22 itens)
 1. ✅ Rate Limiting nos Controllers
 2. ✅ Sanitização de Input
 3. ✅ Timeout Configurável em HTTP Clients
@@ -237,6 +264,10 @@ Este arquivo lista as melhorias identificadas que ainda precisam ser implementad
 16. ✅ Service Map
 17. ✅ Profiling
 18. ✅ Alert Grouping
+19. ✅ Sample Application (j-obs-sample) com ActivityGenerator e Health Indicators
+20. ✅ Dashboard Request Rate Chart com Chart.js
+21. ✅ Top Endpoints Widget
+22. ✅ Fix Chart.js reactivity issue com Alpine.js
 
 ### Pendentes
 
@@ -247,7 +278,7 @@ Este arquivo lista as melhorias identificadas que ainda precisam ser implementad
 | Features | 2 | Média |
 | Infraestrutura | 1 | Baixa |
 
-**Total:** 7 itens pendentes (reduzido de 25)
+**Total:** 7 itens pendentes (22 concluídos)
 
 ---
 

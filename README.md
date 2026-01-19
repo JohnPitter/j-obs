@@ -789,7 +789,68 @@ j-obs/
 │           ├── alert/             # Alert engine and providers
 │           └── actuator/          # Custom actuator endpoints
 │
-└── j-obs-sample/                  # Sample application
+└── j-obs-sample/                  # Sample application demonstrating all features
+    └── src/main/java/
+        └── io/github/jobs/sample/
+            ├── job/               # ActivityGenerator for demo data
+            ├── service/           # OrderService, PaymentService, etc.
+            ├── config/            # Custom HealthIndicators
+            └── model/             # Order, OrderItem
+```
+
+---
+
+## Sample Application
+
+The `j-obs-sample` module is a complete Spring Boot application that demonstrates all J-Obs features. It generates realistic observability data for testing and learning.
+
+### Running the Sample
+
+```bash
+# Clone and build
+git clone https://github.com/JohnPitter/j-obs.git
+cd j-obs
+mvn clean install -DskipTests
+
+# Run the sample application
+cd j-obs-sample
+mvn spring-boot:run
+```
+
+Access the dashboard: **http://localhost:8080/j-obs**
+
+### What It Demonstrates
+
+| Component | Description |
+|-----------|-------------|
+| **ActivityGenerator** | Scheduled job that creates orders, payments, notifications every 10 seconds |
+| **Traffic Bursts** | Every 2 minutes, 20% chance of generating 10 rapid orders for anomaly detection |
+| **Log Levels** | Generates DEBUG, INFO, WARN, ERROR logs with correlation IDs |
+| **Error Spikes** | 5% chance of generating error spikes for alert testing |
+| **Health Indicators** | 6 custom indicators: Database, Cache, Kafka, Payment, Inventory, Disk Space |
+| **SQL Patterns** | Demonstrates N+1 queries for SQL Analyzer detection |
+| **Service Layer** | OrderService, PaymentService, InventoryService, NotificationService with `@Observable` |
+
+### Sample Health Indicators
+
+The sample includes realistic health indicators:
+
+```java
+@Component("inventory")
+public class InventoryServiceHealthIndicator implements HealthIndicator {
+    @Override
+    public Health health() {
+        Map<String, Integer> lowStock = inventoryService.getLowStockItems(20);
+        if (lowStock.size() > 3) {
+            return Health.status("WARNING")
+                .withDetail("lowStockItemCount", lowStock.size())
+                .build();
+        }
+        return Health.up()
+            .withDetail("totalInventory", inventoryService.getTotalInventory())
+            .build();
+    }
+}
 ```
 
 ---

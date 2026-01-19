@@ -819,17 +819,68 @@ http:
 
 ---
 
+## Experimentando com a Aplicação de Exemplo
+
+O projeto inclui uma aplicação de exemplo completa (`j-obs-sample`) que demonstra todas as funcionalidades do J-Obs.
+
+### Executando a Aplicação de Exemplo
+
+```bash
+# Clone e compile o projeto
+git clone https://github.com/JohnPitter/j-obs.git
+cd j-obs
+mvn clean install -DskipTests
+
+# Execute a aplicação de exemplo
+cd j-obs-sample
+mvn spring-boot:run
+```
+
+Acesse: **http://localhost:8080/j-obs**
+
+### O Que a Aplicação de Exemplo Demonstra
+
+A aplicação de exemplo gera dados de observabilidade automaticamente:
+
+| Funcionalidade | Descrição |
+|----------------|-----------|
+| **ActivityGenerator** | Gera pedidos, pagamentos e notificações a cada 10 segundos |
+| **Traffic Bursts** | Simula picos de tráfego para testar detecção de anomalias |
+| **Logs Variados** | Produz logs de todos os níveis (DEBUG, INFO, WARN, ERROR) |
+| **Error Spikes** | Ocasionalmente gera rajadas de erros para testar alertas |
+| **Health Indicators** | 6 indicadores customizados (Database, Cache, Kafka, Payment, Inventory, Disk) |
+| **SQL Patterns** | Demonstra padrões N+1 para o SQL Analyzer |
+
+### Testando Funcionalidades Específicas
+
+**Para ver o Request Rate Chart:**
+- Aguarde alguns segundos após iniciar - o gráfico mostra requisições dos últimos 5 minutos
+- O ActivityGenerator cria traces automaticamente
+
+**Para testar Anomaly Detection:**
+- Aguarde um traffic burst (20% de chance a cada 2 minutos)
+- Ou faça múltiplas requisições rápidas para simular pico
+
+**Para ver Health Check variado:**
+- O PaymentServiceHealthIndicator simula latência variável
+- O InventoryServiceHealthIndicator reporta WARNING quando há baixo estoque
+
+**Para testar SQL Analyzer:**
+- O método `checkInventoryStatus()` em ActivityGenerator cria padrão N+1
+
+---
+
 ## Próximos Passos
 
 1. **Explore o Dashboard**: Navegue pelas diferentes seções
-2. **Gere Carga**: Use ferramentas como `ab` ou `wrk` para gerar tráfego
-3. **Adicione Instrumentação**: Adicione traces e métricas aos seus serviços
-4. **Configure Alertas**: (Em breve) Configure alertas baseados em métricas
+2. **Execute a Aplicação de Exemplo**: Use `j-obs-sample` para ver dados reais
+3. **Adicione Instrumentação**: Use `@Observable` nos seus serviços
+4. **Configure Alertas**: Configure notificações via Telegram, Slack ou Email
 
 ## Suporte
 
-- GitHub Issues: https://github.com/j-obs/j-obs/issues
-- Documentação: https://j-obs.github.io
+- GitHub Issues: https://github.com/JohnPitter/j-obs/issues
+- Documentação: https://github.com/JohnPitter/j-obs
 
 ---
 

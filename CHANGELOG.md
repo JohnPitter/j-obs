@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sample Application (`j-obs-sample`)** - Complete demonstration project
+  - `ActivityGenerator` - Scheduled job that generates sample activity for observability demonstration
+    - Creates orders, processes payments, checks inventory, sends notifications
+    - Generates traffic bursts for anomaly detection testing
+    - Produces various log levels with MDC context
+    - Simulates slow operations and error spikes
+  - `OrderService`, `InventoryService`, `PaymentService`, `NotificationService` - Full service layer with `@Observable` annotation
+  - Custom Health Indicators:
+    - `InventoryServiceHealthIndicator` - Business-specific health check with low stock detection
+    - `DiskSpaceHealthIndicator` - Simulated disk space monitoring with warning thresholds
+    - `KafkaHealthIndicator` - Message broker health simulation
+    - `CacheHealthIndicator` - Redis cache connectivity simulation
+    - `PaymentServiceHealthIndicator` - External payment gateway health with latency tracking
+    - `DatabaseHealthIndicator` - Database connectivity with connection pool stats
+  - Domain models: `Order`, `OrderItem`, `OrderStatus`
+  - Comprehensive `application.yml` with all J-Obs features configured
+  - Demonstrates SQL patterns for SQL Analyzer testing
+- **Dashboard Request Rate Chart** - Real-time visualization of request rate over last 5 minutes
+  - Line chart using Chart.js
+  - Auto-refresh every 5 seconds
+  - Fallback message when no data available
+- **Top Endpoints Widget** - Shows top 5 endpoints sorted by latency
 - Initial project structure with Maven multi-module setup
 - `j-obs-core` module with domain entities and dependency checking logic
   - `Dependency` value object for dependency metadata
@@ -408,7 +430,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Fixed
-- N/A
+- **Chart.js Reactivity Issue** - Fixed "Maximum call stack size exceeded" error when Chart.js instance was made reactive by Alpine.js
+  - Moved chart reference outside Alpine's reactive scope
+  - Chart now renders correctly without reactivity conflicts
+- **Request Rate Chart Error Handling** - Added proper error handling and fallback UI when request rate data is unavailable
 
 ### Security
 - **Rate Limiting**: Added `RateLimiter` and `RateLimitInterceptor` to protect API endpoints from DoS attacks
