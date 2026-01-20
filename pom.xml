@@ -65,7 +65,7 @@
         <spring-boot.version>3.2.0</spring-boot.version>
         <opentelemetry.version>1.32.0</opentelemetry.version>
         <opentelemetry-instrumentation.version>2.1.0-alpha</opentelemetry-instrumentation.version>
-        <micrometer.version>1.12.0</micrometer.version>
+        <!-- Micrometer version is managed by Spring Boot BOM - do not override -->
         <junit.version>5.10.1</junit.version>
         <assertj.version>3.24.2</assertj.version>
         <mockito.version>5.8.0</mockito.version>
@@ -91,17 +91,15 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Micrometer -->
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-core</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-prometheus</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
+            <!--
+                Micrometer versions are managed by Spring Boot BOM.
+                Do NOT override them here to avoid version conflicts when users
+                use different Spring Boot versions.
+
+                IMPORTANT: Users should import j-obs-bom (not j-obs-parent) in their projects.
+                The j-obs-bom only manages J-Obs module versions and does not affect
+                third-party dependencies like Micrometer or Prometheus.
+            -->
 
             <!-- Project modules -->
             <dependency>

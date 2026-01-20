@@ -87,6 +87,84 @@ NoClassDefFoundError: io/micrometer/prometheusmetrics/PrometheusMeterRegistry
 
 **Solution:** As of v1.0.10+, J-Obs automatically detects both old and new Micrometer Prometheus packages. Ensure you're using J-Obs 1.0.10+ and let Spring Boot manage Micrometer versions.
 
+### Prometheus version conflicts
+
+**Symptoms:**
+```
+java.lang.NoSuchMethodError: 'boolean io.prometheus.metrics.config.ExporterProperties.getPrometheusTimestampsInMs()'
+```
+
+or similar `NoSuchMethodError` in Prometheus classes.
+
+**Cause:** The `micrometer-registry-prometheus` dependency brings transitive Prometheus dependencies. When there are version misalignments between `prometheus-metrics-exposition-textformats` and `prometheus-metrics-config`, methods may be missing.
+
+This typically occurs when:
+- Using a Spring Boot version different from what J-Obs was built with
+- Manually pinning Prometheus dependency versions
+- Importing `j-obs-parent` instead of `j-obs-bom`
+
+**Solution:**
+
+**Option 1 (Recommended):** Use `j-obs-bom` instead of `j-obs-parent`:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <!-- Only manages J-Obs modules, doesn't touch Prometheus/Micrometer -->
+        <dependency>
+            <groupId>io.github.johnpitter</groupId>
+            <artifactId>j-obs-bom</artifactId>
+            <version>1.0.11</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+**Option 2:** Force consistent Prometheus versions in your project:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <!-- Force all Prometheus artifacts to the same version -->
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-config</artifactId>
+            <version>1.3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-exposition-textformats</artifactId>
+            <version>1.3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-exposition-formats</artifactId>
+            <version>1.3.5</version>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+**Option 3:** Use Spring Boot's Prometheus BOM (Spring Boot 3.4+):
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-bom</artifactId>
+            <version>1.3.5</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+**Diagnosis:** Run `mvn dependency:tree -Dincludes=io.prometheus` to check for version misalignments.
+
 ---
 
 ## WebSocket Issues
@@ -548,6 +626,7 @@ If your issue isn't covered here:
 | `BeanDefinitionOverrideException` | Remove duplicate bean definitions |
 | `NoSuchMethodError` in OpenTelemetry | Check version compatibility |
 | `NoClassDefFoundError: PrometheusMeterRegistry` | Use v1.0.10+ (supports both old and new Micrometer packages) |
+| `NoSuchMethodError` in Prometheus classes | Use `j-obs-bom` (not `j-obs-parent`) or align Prometheus versions - see [Prometheus version conflicts](#prometheus-version-conflicts) |
 | `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
 | `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |
 | J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.11+ where ALL configs respect `j-obs.enabled` |

@@ -46,7 +46,35 @@ J-Obs adds complete observability to your Spring Boot application with a single 
 | Spring Boot | 3.2+ |
 | Maven/Gradle | 3.6+ / 7.5+ |
 
-### Maven
+### Maven (Recommended)
+
+Use the **j-obs-bom** for version management. This BOM only manages J-Obs module versions and does NOT override Spring Boot's dependency versions, ensuring compatibility:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <!-- J-Obs BOM - only manages J-Obs modules, not third-party deps -->
+        <dependency>
+            <groupId>io.github.johnpitter</groupId>
+            <artifactId>j-obs-bom</artifactId>
+            <version>1.0.11</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>io.github.johnpitter</groupId>
+        <artifactId>j-obs-spring-boot-starter</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### Maven (Simple)
+
+If you don't need BOM management, just add the dependency directly:
 
 ```xml
 <dependency>
@@ -75,6 +103,8 @@ J-Obs adds complete observability to your Spring Boot application with a single 
     <artifactId>spring-boot-starter-websocket</artifactId>
 </dependency>
 ```
+
+> **Important:** Let Spring Boot manage Micrometer and Prometheus versions. See [Troubleshooting](docs/TROUBLESHOOTING.md#prometheus-version-conflicts) if you encounter version conflicts.
 
 ### Minimal Configuration
 
@@ -227,13 +257,25 @@ public class OrderService {
 
 ## Compatibility
 
-| Spring Boot | Java | Status |
-|-------------|------|--------|
-| 3.4.x | 17, 21 | ✅ Tested |
-| 3.3.x | 17, 21 | ✅ Tested |
-| 3.2.x | 17, 21 | ✅ Tested |
-| 3.1.x | 17 | ⚠️ Should work |
-| 2.x | - | ❌ Not supported |
+### Spring Boot Versions
+
+| Spring Boot | Java | Micrometer | Status |
+|-------------|------|------------|--------|
+| 3.4.x | 17, 21 | 1.14.x | ✅ Tested |
+| 3.3.x | 17, 21 | 1.13.x | ✅ Tested |
+| 3.2.x | 17, 21 | 1.12.x | ✅ Tested |
+| 3.1.x | 17 | 1.11.x | ⚠️ Should work |
+| 2.x | - | - | ❌ Not supported |
+
+### Dependency Version Strategy
+
+J-Obs is designed to work seamlessly with your Spring Boot version:
+
+- **j-obs-bom**: Only manages J-Obs module versions. Does NOT pin Micrometer, OpenTelemetry, or other dependencies. This is the recommended approach.
+- **Spring Boot BOM**: Let Spring Boot manage all third-party dependency versions (Micrometer, Prometheus, etc.)
+- **OpenTelemetry**: Compatible with 1.32.x+
+
+> **Tip:** Always use `j-obs-bom` (not `j-obs-parent`) when importing J-Obs in your project. The BOM is designed to be non-invasive and won't conflict with Spring Boot's dependency management.
 
 ---
 
