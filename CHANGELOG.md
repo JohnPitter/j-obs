@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Performance Benchmarks** - New `j-obs-benchmarks` module with JMH benchmarks
+  - `LogEntryBenchmark` - Measures LogEntry creation throughput (~2.7M ops/sec)
+  - `LogRepositoryBenchmark` - Benchmarks for InMemoryLogRepository operations
+  - `TraceRepositoryBenchmark` - Benchmarks for InMemoryTraceRepository operations
+  - Concurrent operation benchmarks (4 threads)
+  - Parameterized tests for different buffer sizes (1K, 5K, 10K)
+
 ## [1.0.6] - 2026-01-20
 
 ### Fixed

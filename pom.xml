@@ -52,6 +52,7 @@
         <module>j-obs-core</module>
         <module>j-obs-spring-boot-starter</module>
         <module>j-obs-sample</module>
+        <module>j-obs-benchmarks</module>
     </modules>
 
     <properties>
