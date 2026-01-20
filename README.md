@@ -135,7 +135,7 @@ After installation, the artifacts will be available in your local `~/.m2/reposit
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
@@ -149,7 +149,7 @@ Using the Bill of Materials (BOM) ensures consistent dependency versions:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.5</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -190,7 +190,7 @@ Then add the dependency:
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
@@ -983,7 +983,7 @@ j-obs:
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
@@ -1018,7 +1018,7 @@ mvn clean install -DskipTests
     <dependency>
         <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-spring-boot-starter</artifactId>
-        <version>1.0.4</version>
+        <version>1.0.5</version>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
