@@ -52,7 +52,7 @@ J-Obs adds complete observability to your Spring Boot application with a single 
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 </dependency>
 ```
 

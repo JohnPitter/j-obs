@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-01-20
+
+### Added
+- **Automatic Observability Conflict Resolution** - J-Obs now automatically handles conflicts with Spring Boot Actuator
+  - `JObsObservabilityAutoConfiguration` for automatic handling of observability conflicts
+  - Auto-configures `@Scheduled` tasks with `ObservationRegistry.NOOP` to prevent TracingContext errors
+  - New configuration: `j-obs.observability.scheduled-tasks-noop` (default: true)
+
+### Fixed
+- **GlobalOpenTelemetry Conflict** - Fixed `IllegalStateException: GlobalOpenTelemetry.set has already been called` when using with Spring Boot Actuator
+  - J-Obs now detects and reuses existing GlobalOpenTelemetry instances
+  - No longer conflicts with Spring Boot's tracing auto-configuration
+- **TracingContext in @Scheduled Methods** - Fixed `IllegalArgumentException: Context does not have an entry for key TracingContext`
+  - Automatically configures scheduled tasks to bypass Micrometer's Observation API
+  - Users no longer need to create manual `SchedulingConfigurer` beans
+
+### Changed
+- **Deprecated Jaeger Exporter Removed** - Removed `opentelemetry-exporter-jaeger` dependency
+  - Jaeger natively supports OTLP protocol
+  - Use OTLP exporter instead: `j-obs.traces.export.otlp.endpoint=http://jaeger:4317`
+
+### Infrastructure
+- Added missing plugin version (0.7.0) to `central-publishing-maven-plugin` in benchmarks module
+
 ## [1.0.8] - 2026-01-20
 
 ### Added

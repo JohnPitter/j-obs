@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-bom</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
     <packaging>pom</packaging>
 
     <name>J-Obs BOM</name>
