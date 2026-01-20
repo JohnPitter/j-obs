@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = HealthEndpointAutoConfiguration.class)
 @ConditionalOnClass(HealthEndpoint.class)
-@ConditionalOnProperty(prefix = "j-obs.health", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 public class JObsHealthAutoConfiguration {
 
     @Bean

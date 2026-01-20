@@ -36,7 +36,7 @@ class JObsLogAutoConfigurationTest {
     @Test
     void shouldNotAutoConfigureWhenDisabled() {
         contextRunner
-                .withPropertyValues("j-obs.logs.enabled=false")
+                .withPropertyValues("j-obs.enabled=false")
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(LogRepository.class);
                     assertThat(context).doesNotHaveBean(LogController.class);

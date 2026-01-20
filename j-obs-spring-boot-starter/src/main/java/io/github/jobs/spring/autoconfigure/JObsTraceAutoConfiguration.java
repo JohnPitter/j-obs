@@ -63,7 +63,7 @@ import java.util.List;
  * @see JObsProperties.Traces
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "j-obs.traces.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsTraceAutoConfiguration {
 

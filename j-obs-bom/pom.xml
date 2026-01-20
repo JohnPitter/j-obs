@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-bom</artifactId>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
     <packaging>pom</packaging>
 
     <name>J-Obs BOM</name>
@@ -43,12 +43,7 @@
     </scm>
 
     <properties>
-        <j-obs.version>1.0.10</j-obs.version>
-
-        <!-- Recommended dependency versions -->
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <opentelemetry.version>1.32.0</opentelemetry.version>
-        <micrometer.version>1.12.0</micrometer.version>
+        <j-obs.version>1.0.11</j-obs.version>
     </properties>
 
     <dependencyManagement>
@@ -67,35 +62,19 @@
                 <version>${j-obs.version}</version>
             </dependency>
 
-            <!-- Recommended: Spring Boot BOM -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!--
+            NOTE: This BOM only manages J-Obs module versions.
 
-            <!-- Recommended: OpenTelemetry BOM -->
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-bom</artifactId>
-                <version>${opentelemetry.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            Users should manage their own versions of:
+            - Spring Boot (via spring-boot-starter-parent or spring-boot-dependencies BOM)
+            - Micrometer (managed by Spring Boot BOM)
+            - OpenTelemetry (via opentelemetry-bom if needed)
 
-            <!-- Recommended: Micrometer -->
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-core</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-prometheus</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
+            J-Obs is compatible with:
+            - Spring Boot 3.2.x, 3.3.x, 3.4.x
+            - Micrometer 1.12.x, 1.13.x, 1.14.x
+            - OpenTelemetry 1.32.x+
+            -->
         </dependencies>
     </dependencyManagement>
 

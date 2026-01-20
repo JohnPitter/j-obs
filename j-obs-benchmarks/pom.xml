@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-parent</artifactId>
-        <version>1.0.10</version>
+        <version>1.0.11</version>
     </parent>
 
     <artifactId>j-obs-benchmarks</artifactId>

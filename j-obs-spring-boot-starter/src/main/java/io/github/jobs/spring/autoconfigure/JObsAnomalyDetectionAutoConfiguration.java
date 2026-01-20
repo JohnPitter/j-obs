@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Auto-configuration for Anomaly Detection.
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "j-obs.anomaly-detection.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @ConditionalOnBean(TraceRepository.class)
 @EnableConfigurationProperties(JObsProperties.class)
 @EnableScheduling

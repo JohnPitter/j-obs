@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-01-20
+
+### Fixed
+- **Complete J-Obs Disable with `j-obs.enabled=false`** - Setting this property now properly disables ALL J-Obs auto-configurations
+  - Previously, some configurations only checked their own sub-properties (e.g., `j-obs.logs.enabled`)
+  - Now ALL auto-configurations check `j-obs.enabled` first
+  - This fixes MockServletContext test failures when trying to disable J-Obs
+  - Affected configurations: `JObsLogAutoConfiguration`, `JObsWebSocketConfiguration`, `JObsTraceAutoConfiguration`, `JObsMetricAutoConfiguration`, `JObsHealthAutoConfiguration`, `JObsAlertAutoConfiguration`, `JObsAlertNotificationAutoConfiguration`, `JObsSqlAnalyzerAutoConfiguration`, `JObsAnomalyDetectionAutoConfiguration`, `JObsProfilingAutoConfiguration`, `JObsToolsAutoConfiguration`, `JObsTraceExportAutoConfiguration`, `JObsInternalMetricsAutoConfiguration`, `JObsWebFluxLogAutoConfiguration`
+
+- **J-Obs BOM No Longer Pins Third-Party Versions** - The BOM now only manages J-Obs module versions
+  - Removed Spring Boot BOM import from j-obs-bom
+  - Removed explicit Micrometer version pinning
+  - Users' Spring Boot version will now manage Micrometer and other dependency versions
+  - This prevents version conflicts when using J-Obs with Spring Boot 3.3.x and 3.4.x
+  - Previously, j-obs-bom pinned Micrometer 1.12.0 which conflicted with Spring Boot 3.4.x (Micrometer 1.14.x)
+
+### Changed
+- Updated documentation in TROUBLESHOOTING.md with:
+  - Information about fully disabling J-Obs with `j-obs.enabled=false`
+  - Clarification that j-obs-bom only manages J-Obs versions, not third-party dependencies
+  - Added Micrometer version conflict troubleshooting section
+
 ## [1.0.10] - 2026-01-20
 
 ### Added

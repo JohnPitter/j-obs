@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = JObsTraceAutoConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-@ConditionalOnProperty(name = "j-obs.tools.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsToolsAutoConfiguration {
 

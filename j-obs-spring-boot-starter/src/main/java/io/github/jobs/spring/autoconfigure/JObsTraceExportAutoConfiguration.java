@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * like Grafana Tempo, Jaeger, Zipkin, or any OTLP-compatible collector.
  */
 @AutoConfiguration(after = JObsTraceAutoConfiguration.class)
-@ConditionalOnProperty(name = "j-obs.traces.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsTraceExportAutoConfiguration {
 

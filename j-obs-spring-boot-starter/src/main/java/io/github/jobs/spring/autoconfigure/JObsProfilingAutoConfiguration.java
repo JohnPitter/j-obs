@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties(JObsProperties.class)
-@ConditionalOnProperty(prefix = "j-obs.profiling", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 public class JObsProfilingAutoConfiguration {
 
     @Bean

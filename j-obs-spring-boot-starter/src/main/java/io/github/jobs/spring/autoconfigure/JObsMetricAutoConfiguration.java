@@ -23,7 +23,7 @@ import java.time.Duration;
  */
 @AutoConfiguration(after = CompositeMeterRegistryAutoConfiguration.class)
 @ConditionalOnClass(MeterRegistry.class)
-@ConditionalOnProperty(prefix = "j-obs.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableScheduling
 public class JObsMetricAutoConfiguration {
 

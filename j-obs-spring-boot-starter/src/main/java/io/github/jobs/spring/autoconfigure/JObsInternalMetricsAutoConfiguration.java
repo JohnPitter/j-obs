@@ -60,7 +60,7 @@ import org.springframework.context.annotation.Bean;
 })
 @ConditionalOnClass(MeterRegistry.class)
 @ConditionalOnBean(MeterRegistry.class)
-@ConditionalOnProperty(name = "j-obs.metrics.internal.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 public class JObsInternalMetricsAutoConfiguration {
 
     @Bean

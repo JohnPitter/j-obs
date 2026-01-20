@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = JObsLogAutoConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
-@ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @ConditionalOnClass(name = "org.springframework.web.reactive.function.server.RouterFunction")
 public class JObsWebFluxLogAutoConfiguration {
 

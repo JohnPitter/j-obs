@@ -52,7 +52,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
  * @see JObsProperties.Logs
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsLogAutoConfiguration {
 

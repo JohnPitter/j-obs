@@ -52,23 +52,40 @@ This guide helps you resolve common issues when integrating J-Obs into your Spri
 - `NoSuchMethodError` or `ClassNotFoundException`
 - OpenTelemetry or Micrometer version conflicts
 
-**Solution:** J-Obs is tested with Spring Boot 3.2.x. If you're using a different version:
+**Solution:** J-Obs is compatible with Spring Boot 3.2.x, 3.3.x, and 3.4.x. The j-obs-bom only manages J-Obs module versions and does NOT pin third-party dependency versions, so it will not conflict with your Spring Boot version.
 
 1. Check the [Compatibility Matrix](#compatibility-matrix)
-2. Consider using the BOM (when available):
+2. Use the BOM for J-Obs version management:
 ```xml
 <dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.11</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
     </dependencies>
 </dependencyManagement>
 ```
+
+**Important:** Let your Spring Boot parent manage Micrometer and other dependency versions. The j-obs-bom only provides J-Obs module versions.
+
+### Micrometer version conflicts
+
+**Symptoms:**
+```
+NoClassDefFoundError: io/micrometer/prometheus/PrometheusMeterRegistry
+```
+or
+```
+NoClassDefFoundError: io/micrometer/prometheusmetrics/PrometheusMeterRegistry
+```
+
+**Cause:** Micrometer 1.13+ changed the package name from `io.micrometer.prometheus` to `io.micrometer.prometheusmetrics`.
+
+**Solution:** As of v1.0.10+, J-Obs automatically detects both old and new Micrometer Prometheus packages. Ensure you're using J-Obs 1.0.10+ and let Spring Boot manage Micrometer versions.
 
 ---
 
@@ -186,18 +203,7 @@ class MyIntegrationTest {
 
 **Solutions:**
 
-**Option 1:** Exclude J-Obs in tests:
-```java
-@SpringBootTest
-@EnableAutoConfiguration(exclude = {
-    JObsAutoConfiguration.class
-})
-class MyTest {
-    // ...
-}
-```
-
-**Option 2:** Use test profile:
+**Option 1 (Recommended):** Disable J-Obs with property:
 ```yaml
 # application-test.yml
 j-obs:
@@ -207,6 +213,28 @@ j-obs:
 ```java
 @SpringBootTest
 @ActiveProfiles("test")
+class MyTest {
+    // ...
+}
+```
+
+Or via `@TestPropertySource`:
+```java
+@SpringBootTest
+@TestPropertySource(properties = "j-obs.enabled=false")
+class MyTest {
+    // ...
+}
+```
+
+As of v1.0.11+, setting `j-obs.enabled=false` completely disables ALL J-Obs auto-configurations including WebSocket, logs, traces, metrics, alerts, and all other features.
+
+**Option 2:** Exclude specific J-Obs configurations:
+```java
+@SpringBootTest
+@EnableAutoConfiguration(exclude = {
+    JObsAutoConfiguration.class
+})
 class MyTest {
     // ...
 }
@@ -514,10 +542,12 @@ If your issue isn't covered here:
 | Error Message | Solution |
 |---------------|----------|
 | `WebSocketConfigurer not found` | Use v1.0.1+ or add websocket starter |
-| `ServerContainer not available` | Use v1.0.10+ (auto-detected via `@ConditionalOnServerContainer`) |
+| `ServerContainer not available` | Use v1.0.10+ (auto-detected via `@ConditionalOnServerContainer`) or set `j-obs.enabled=false` |
 | `POM is invalid` | Use v1.0.4+ |
 | `Could not find artifact io.github.j-obs` | Change groupId to `io.github.johnpitter` |
 | `BeanDefinitionOverrideException` | Remove duplicate bean definitions |
 | `NoSuchMethodError` in OpenTelemetry | Check version compatibility |
+| `NoClassDefFoundError: PrometheusMeterRegistry` | Use v1.0.10+ (supports both old and new Micrometer packages) |
 | `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
 | `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |
+| J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.11+ where ALL configs respect `j-obs.enabled` |

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for J-Obs SQL Analyzer.
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "j-obs.sql-analyzer.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @ConditionalOnBean(TraceRepository.class)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsSqlAnalyzerAutoConfiguration {

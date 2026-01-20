@@ -37,7 +37,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @Configuration
 @ConditionalOnClass({ServerContainer.class, ServletServerContainerFactoryBean.class})
 @ConditionalOnServerContainer
-@ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsWebSocketConfiguration {
 
