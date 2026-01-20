@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **ConditionalOnServerContainer Annotation** - Custom condition for WebSocket configuration
+  - `OnServerContainerCondition` checks for actual `ServerContainer` availability in `ServletContext`
+  - Prevents WebSocket auto-configuration from loading in test environments with `MockServletContext`
+
+### Fixed
+- **MockServletContext Test Failures** - Fixed `ServerContainer not available` errors in Spring Boot tests
+  - WebSocket configuration now only loads when a real `ServerContainer` is present
+  - Tests using `@SpringBootTest` without `WebEnvironment.RANDOM_PORT` now work correctly
+  - No manual workaround required (previously needed `j-obs.logs.websocket.enabled=false`)
+
 ## [1.0.9] - 2026-01-20
 
 ### Added

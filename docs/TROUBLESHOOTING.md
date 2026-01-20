@@ -140,19 +140,28 @@ j-obs:
 
 ## Test Environment Issues
 
-### Tests fail with "MockServletContext"
+### Tests fail with "MockServletContext" or "ServerContainer not available"
 
 **Symptoms:**
 ```
 Caused by: java.lang.IllegalStateException:
-A]ServerContainer' that could not be satisfied
+javax.websocket.server.ServerContainer not available
 ```
 
-**Cause:** `MockServletContext` doesn't support WebSocket (fixed in v1.0.1+).
+or
 
-**Solution:** Use v1.0.1 or later. J-Obs now detects test environments and disables WebSocket automatically.
+```
+Caused by: java.lang.IllegalStateException:
+A 'ServerContainer' that could not be satisfied
+```
 
-**Workaround for older versions:**
+**Cause:** `MockServletContext` doesn't have the `ServerContainer` attribute set. This occurs in Spring Boot tests that use `@SpringBootTest` without a real servlet container.
+
+**Solution:** As of v1.0.10+, J-Obs automatically detects if a real `ServerContainer` is available in the `ServletContext`. If running in a test environment with `MockServletContext`, WebSocket configuration is automatically skipped.
+
+The fix uses a custom `@ConditionalOnServerContainer` annotation that checks for the presence of the `jakarta.websocket.server.ServerContainer` attribute in the `ServletContext` before loading WebSocket-related beans.
+
+**Workaround for older versions (< 1.0.10):**
 ```java
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -160,6 +169,14 @@ A]ServerContainer' that could not be satisfied
 })
 class MyTest {
     // ...
+}
+```
+
+**Alternative: Use integration tests with real server:**
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class MyIntegrationTest {
+    // This starts a real servlet container with WebSocket support
 }
 ```
 
@@ -497,10 +514,10 @@ If your issue isn't covered here:
 | Error Message | Solution |
 |---------------|----------|
 | `WebSocketConfigurer not found` | Use v1.0.1+ or add websocket starter |
-| `ServerContainer not available` | Use v1.0.1+ (auto-detected in tests) |
+| `ServerContainer not available` | Use v1.0.10+ (auto-detected via `@ConditionalOnServerContainer`) |
 | `POM is invalid` | Use v1.0.4+ |
 | `Could not find artifact io.github.j-obs` | Change groupId to `io.github.johnpitter` |
 | `BeanDefinitionOverrideException` | Remove duplicate bean definitions |
 | `NoSuchMethodError` in OpenTelemetry | Check version compatibility |
 | `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
-| `Context does not have an entry for key TracingContext` | Add ObservabilityConfig with NOOP registry |
+| `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |

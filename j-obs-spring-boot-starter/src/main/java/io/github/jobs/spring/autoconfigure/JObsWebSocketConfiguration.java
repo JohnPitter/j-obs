@@ -18,6 +18,15 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  * performance when streaming logs. The permessage-deflate compression extension
  * can significantly reduce bandwidth usage for text-based protocols like JSON.
  * <p>
+ * This configuration is only loaded when:
+ * <ul>
+ *   <li>WebSocket classes are on the classpath</li>
+ *   <li>A real {@link ServerContainer} is available in the ServletContext</li>
+ * </ul>
+ * <p>
+ * In test environments using {@code MockServletContext}, the ServerContainer
+ * is not available, so this configuration will be skipped automatically.
+ * <p>
  * Configuration properties:
  * <ul>
  *   <li>{@code j-obs.logs.websocket.compression-enabled} - Enable compression (default: true)</li>
@@ -27,6 +36,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  */
 @Configuration
 @ConditionalOnClass({ServerContainer.class, ServletServerContainerFactoryBean.class})
+@ConditionalOnServerContainer
 @ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsWebSocketConfiguration {

@@ -89,15 +89,22 @@ public class JObsLogAutoConfiguration {
     /**
      * Configuration for WebSocket support (optional).
      * <p>
-     * This configuration is only loaded when WebSocket classes are available
-     * on the classpath AND a ServerContainer is present (not available in
-     * MockServletContext test environments).
+     * This configuration is only loaded when:
+     * <ul>
+     *   <li>WebSocket classes are available on the classpath</li>
+     *   <li>A real {@code ServerContainer} is present in the ServletContext</li>
+     * </ul>
+     * <p>
+     * In test environments using {@code MockServletContext}, the ServerContainer
+     * attribute is not set, so this configuration will be skipped automatically.
+     * This prevents failures when running tests without a real servlet container.
      */
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass(name = {
         "org.springframework.web.socket.config.annotation.WebSocketConfigurer",
         "jakarta.websocket.server.ServerContainer"
     })
+    @ConditionalOnServerContainer
     @EnableWebSocket
     static class WebSocketConfiguration implements WebSocketConfigurer {
 
