@@ -12,8 +12,12 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -22,6 +26,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import java.util.List;
+
 /**
  * Auto-configuration for J-Obs trace collection and visualization.
  */
@@ -29,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(name = "j-obs.traces.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsTraceAutoConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(JObsTraceAutoConfiguration.class);
 
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean
@@ -67,16 +75,34 @@ public class JObsTraceAutoConfiguration {
         @ConditionalOnMissingBean
         public SdkTracerProvider sdkTracerProvider(
                 SpanExporter jObsSpanExporter,
+                ObjectProvider<List<SpanExporter>> additionalExporters,
                 @Value("${spring.application.name:j-obs-app}") String serviceName) {
+
             Resource resource = Resource.getDefault()
                     .merge(Resource.create(Attributes.of(
                             AttributeKey.stringKey("service.name"), serviceName
                     )));
 
-            return SdkTracerProvider.builder()
-                    .addSpanProcessor(SimpleSpanProcessor.create(jObsSpanExporter))
-                    .setResource(resource)
-                    .build();
+            SdkTracerProviderBuilder builder = SdkTracerProvider.builder()
+                    .setResource(resource);
+
+            // Always add the J-Obs internal exporter
+            builder.addSpanProcessor(SimpleSpanProcessor.create(jObsSpanExporter));
+            log.debug("Added J-Obs span exporter");
+
+            // Add any additional configured exporters (OTLP, Zipkin, Jaeger)
+            List<SpanExporter> exporters = additionalExporters.getIfAvailable();
+            if (exporters != null) {
+                for (SpanExporter exporter : exporters) {
+                    // Skip the J-Obs exporter to avoid duplicate registration
+                    if (!(exporter instanceof JObsSpanExporter)) {
+                        builder.addSpanProcessor(SimpleSpanProcessor.create(exporter));
+                        log.info("Added external span exporter: {}", exporter.getClass().getSimpleName());
+                    }
+                }
+            }
+
+            return builder.build();
         }
 
         @Bean

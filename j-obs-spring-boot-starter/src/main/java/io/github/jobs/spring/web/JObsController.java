@@ -23,12 +23,14 @@ public class JObsController {
     private final JObsProperties properties;
     private final String dashboardHtml;
     private final String requirementsHtml;
+    private final String loginHtml;
 
     public JObsController(DependencyChecker dependencyChecker, JObsProperties properties) {
         this.dependencyChecker = dependencyChecker;
         this.properties = properties;
         this.dashboardHtml = loadResource("/static/j-obs/index.html");
         this.requirementsHtml = loadResource("/static/j-obs/requirements.html");
+        this.loginHtml = loadResource("/static/j-obs/login.html");
     }
 
     @GetMapping("${j-obs.path:/j-obs}")
@@ -55,6 +57,16 @@ public class JObsController {
     public String dashboardDirect() {
         DependencyCheckResult result = dependencyChecker.check();
         return renderDashboard(result);
+    }
+
+    @GetMapping("${j-obs.path:/j-obs}/login")
+    @ResponseBody
+    public String login() {
+        return renderLogin();
+    }
+
+    private String renderLogin() {
+        return loginHtml.replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
     }
 
     private String renderDashboard(DependencyCheckResult result) {

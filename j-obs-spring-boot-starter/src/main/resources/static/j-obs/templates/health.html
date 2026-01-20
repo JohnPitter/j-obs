@@ -8,6 +8,39 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+        // Theme initialization
+        (function() {
+            const saved = localStorage.getItem('j-obs-theme');
+            if (saved === 'light') {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            } else if (saved === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+        // Theme toggle function
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            if (isDark) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                localStorage.setItem('j-obs-theme', 'light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                localStorage.setItem('j-obs-theme', 'dark');
+            }
+        }
+    </script>
     <style>
         .glass-card {
             background: rgba(30, 41, 59, 0.8);
@@ -51,6 +84,25 @@
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
+        /* Light mode overrides */
+        html.light body { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); color: #1e293b; }
+        html.light .bg-slate-950 { background-color: #f8fafc; }
+        html.light .bg-slate-900 { background-color: #f1f5f9; }
+        html.light .bg-slate-800\/50 { background-color: rgba(226, 232, 240, 0.8); }
+        html.light .bg-slate-800 { background-color: #e2e8f0; }
+        html.light .bg-slate-700\/50 { background-color: rgba(203, 213, 225, 0.5); }
+        html.light .text-gray-100, html.light .text-slate-100, html.light .text-slate-200 { color: #1e293b; }
+        html.light .text-slate-300 { color: #475569; }
+        html.light .text-slate-400 { color: #64748b; }
+        html.light .text-slate-500 { color: #94a3b8; }
+        html.light .text-white { color: #1e293b; }
+        html.light .border-slate-700, html.light .border-slate-700\/50 { border-color: rgba(203, 213, 225, 0.5); }
+        html.light .glass-card { background: rgba(255, 255, 255, 0.9); border-color: rgba(203, 213, 225, 0.5); }
+        html.light .gradient-text { color: #6366f1; }
+        html.light .fixed.inset-0.bg-gradient-to-br { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important; }
+        html.light .fixed.inset-0:not(.bg-gradient-to-br) { opacity: 0.1 !important; }
+        .theme-toggle { transition: all 0.3s ease; }
+        .theme-toggle:hover { transform: rotate(15deg); }
     </style>
 </head>
 <body class="h-full bg-slate-950 text-gray-100" x-data="healthViewer()" x-init="init()">
@@ -83,6 +135,10 @@
                     <a href="{{BASE_PATH}}/alerts" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Alerts</a>
                     <a href="{{BASE_PATH}}/tools" class="nav-link px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white">Tools</a>
                 </nav>
+            <button onclick="toggleTheme()" class="theme-toggle ml-4 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-700/50" title="Toggle theme">
+                <svg class="w-5 h-5 text-amber-400 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg class="w-5 h-5 text-indigo-500 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-slate-400" x-text="'Last check: ' + formatTime(lastCheckTime)"></span>
                     <button @click="refreshHealth()"

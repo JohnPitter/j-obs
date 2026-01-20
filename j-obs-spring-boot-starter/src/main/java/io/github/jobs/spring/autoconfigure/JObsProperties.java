@@ -245,12 +245,157 @@ public class JObsProperties {
          */
         private boolean enabled = false;
 
+        /**
+         * Authentication type: "basic", "api-key", or "both".
+         */
+        private String type = "basic";
+
+        /**
+         * List of users for basic authentication.
+         */
+        private List<User> users = new ArrayList<>();
+
+        /**
+         * List of valid API keys for API key authentication.
+         */
+        private List<String> apiKeys = new ArrayList<>();
+
+        /**
+         * Header name for API key authentication.
+         */
+        private String apiKeyHeader = "X-API-Key";
+
+        /**
+         * Session timeout for authenticated users.
+         */
+        private Duration sessionTimeout = Duration.ofHours(8);
+
+        /**
+         * Exempt paths from authentication (relative to j-obs path).
+         * By default, static assets are exempt.
+         */
+        private List<String> exemptPaths = new ArrayList<>(List.of("/static/**"));
+
         public boolean isEnabled() {
             return enabled;
         }
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public List<User> getUsers() {
+            return users;
+        }
+
+        public void setUsers(List<User> users) {
+            this.users = users;
+        }
+
+        public List<String> getApiKeys() {
+            return apiKeys;
+        }
+
+        public void setApiKeys(List<String> apiKeys) {
+            this.apiKeys = apiKeys;
+        }
+
+        public String getApiKeyHeader() {
+            return apiKeyHeader;
+        }
+
+        public void setApiKeyHeader(String apiKeyHeader) {
+            this.apiKeyHeader = apiKeyHeader;
+        }
+
+        public Duration getSessionTimeout() {
+            return sessionTimeout;
+        }
+
+        public void setSessionTimeout(Duration sessionTimeout) {
+            this.sessionTimeout = sessionTimeout;
+        }
+
+        public List<String> getExemptPaths() {
+            return exemptPaths;
+        }
+
+        public void setExemptPaths(List<String> exemptPaths) {
+            this.exemptPaths = exemptPaths;
+        }
+
+        /**
+         * Checks if the security configuration is valid.
+         */
+        public boolean isConfigured() {
+            if (!enabled) return true;
+
+            String authType = type.toLowerCase();
+            boolean hasUsers = users != null && !users.isEmpty();
+            boolean hasApiKeys = apiKeys != null && !apiKeys.isEmpty();
+
+            return switch (authType) {
+                case "basic" -> hasUsers;
+                case "api-key" -> hasApiKeys;
+                case "both" -> hasUsers || hasApiKeys;
+                default -> false;
+            };
+        }
+
+        /**
+         * User configuration for basic authentication.
+         */
+        public static class User {
+
+            private String username;
+            private String password;
+            private String role = "USER";
+
+            public User() {
+            }
+
+            public User(String username, String password) {
+                this.username = username;
+                this.password = password;
+            }
+
+            public User(String username, String password, String role) {
+                this.username = username;
+                this.password = password;
+                this.role = role;
+            }
+
+            public String getUsername() {
+                return username;
+            }
+
+            public void setUsername(String username) {
+                this.username = username;
+            }
+
+            public String getPassword() {
+                return password;
+            }
+
+            public void setPassword(String password) {
+                this.password = password;
+            }
+
+            public String getRole() {
+                return role;
+            }
+
+            public void setRole(String role) {
+                this.role = role;
+            }
         }
     }
 
@@ -356,6 +501,11 @@ public class JObsProperties {
          */
         private double sampleRate = 1.0;
 
+        /**
+         * Export configuration for external systems.
+         */
+        private Export export = new Export();
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -386,6 +536,167 @@ public class JObsProperties {
 
         public void setSampleRate(double sampleRate) {
             this.sampleRate = sampleRate;
+        }
+
+        public Export getExport() {
+            return export;
+        }
+
+        public void setExport(Export export) {
+            this.export = export;
+        }
+
+        /**
+         * Export configuration for external tracing systems.
+         */
+        public static class Export {
+
+            /**
+             * OTLP exporter configuration (supports Tempo, generic OTLP collectors).
+             */
+            private Otlp otlp = new Otlp();
+
+            /**
+             * Zipkin exporter configuration.
+             */
+            private Zipkin zipkin = new Zipkin();
+
+            /**
+             * Jaeger exporter configuration.
+             */
+            private Jaeger jaeger = new Jaeger();
+
+            public Otlp getOtlp() {
+                return otlp;
+            }
+
+            public void setOtlp(Otlp otlp) {
+                this.otlp = otlp;
+            }
+
+            public Zipkin getZipkin() {
+                return zipkin;
+            }
+
+            public void setZipkin(Zipkin zipkin) {
+                this.zipkin = zipkin;
+            }
+
+            public Jaeger getJaeger() {
+                return jaeger;
+            }
+
+            public void setJaeger(Jaeger jaeger) {
+                this.jaeger = jaeger;
+            }
+
+            /**
+             * OTLP exporter configuration.
+             */
+            public static class Otlp {
+                private boolean enabled = false;
+                private String endpoint = "http://localhost:4317";
+                private Duration timeout = Duration.ofSeconds(10);
+                private Map<String, String> headers = new HashMap<>();
+
+                public boolean isEnabled() {
+                    return enabled;
+                }
+
+                public void setEnabled(boolean enabled) {
+                    this.enabled = enabled;
+                }
+
+                public String getEndpoint() {
+                    return endpoint;
+                }
+
+                public void setEndpoint(String endpoint) {
+                    this.endpoint = endpoint;
+                }
+
+                public Duration getTimeout() {
+                    return timeout;
+                }
+
+                public void setTimeout(Duration timeout) {
+                    this.timeout = timeout;
+                }
+
+                public Map<String, String> getHeaders() {
+                    return headers;
+                }
+
+                public void setHeaders(Map<String, String> headers) {
+                    this.headers = headers;
+                }
+            }
+
+            /**
+             * Zipkin exporter configuration.
+             */
+            public static class Zipkin {
+                private boolean enabled = false;
+                private String endpoint = "http://localhost:9411/api/v2/spans";
+                private Duration timeout = Duration.ofSeconds(10);
+
+                public boolean isEnabled() {
+                    return enabled;
+                }
+
+                public void setEnabled(boolean enabled) {
+                    this.enabled = enabled;
+                }
+
+                public String getEndpoint() {
+                    return endpoint;
+                }
+
+                public void setEndpoint(String endpoint) {
+                    this.endpoint = endpoint;
+                }
+
+                public Duration getTimeout() {
+                    return timeout;
+                }
+
+                public void setTimeout(Duration timeout) {
+                    this.timeout = timeout;
+                }
+            }
+
+            /**
+             * Jaeger exporter configuration.
+             */
+            public static class Jaeger {
+                private boolean enabled = false;
+                private String endpoint = "http://localhost:14250";
+                private Duration timeout = Duration.ofSeconds(10);
+
+                public boolean isEnabled() {
+                    return enabled;
+                }
+
+                public void setEnabled(boolean enabled) {
+                    this.enabled = enabled;
+                }
+
+                public String getEndpoint() {
+                    return endpoint;
+                }
+
+                public void setEndpoint(String endpoint) {
+                    this.endpoint = endpoint;
+                }
+
+                public Duration getTimeout() {
+                    return timeout;
+                }
+
+                public void setTimeout(Duration timeout) {
+                    this.timeout = timeout;
+                }
+            }
         }
     }
 

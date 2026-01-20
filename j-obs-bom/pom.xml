@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-bom</artifactId>
+    <version>1.0.4</version>
+    <packaging>pom</packaging>
+
+    <name>J-Obs BOM</name>
+    <description>Bill of Materials (BOM) for J-Obs - Java Observability Library</description>
+    <url>https://github.com/JohnPitter/j-obs</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>JohnPitter</id>
+            <name>João Pitter</name>
+            <email>joaopitter@users.noreply.github.com</email>
+            <url>https://github.com/JohnPitter</url>
+            <roles>
+                <role>developer</role>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/JohnPitter/j-obs.git</connection>
+        <developerConnection>scm:git:ssh://github.com:JohnPitter/j-obs.git</developerConnection>
+        <url>https://github.com/JohnPitter/j-obs</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <j-obs.version>1.0.4</j-obs.version>
+
+        <!-- Recommended dependency versions -->
+        <spring-boot.version>3.2.0</spring-boot.version>
+        <opentelemetry.version>1.32.0</opentelemetry.version>
+        <micrometer.version>1.12.0</micrometer.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- J-Obs Core Module -->
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-core</artifactId>
+                <version>${j-obs.version}</version>
+            </dependency>
+
+            <!-- J-Obs Spring Boot Starter (main dependency for most users) -->
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-spring-boot-starter</artifactId>
+                <version>${j-obs.version}</version>
+            </dependency>
+
+            <!-- Recommended: Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Recommended: OpenTelemetry BOM -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Recommended: Micrometer -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/JohnPitter/j-obs</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

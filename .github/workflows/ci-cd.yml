@@ -83,6 +83,63 @@ jobs:
           retention-days: 7
 
   # ============================================
+  # Stage 2.1: Compatibility Test Matrix
+  # ============================================
+  compatibility-test:
+    name: Test (Spring Boot ${{ matrix.spring-boot }}, Java ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Spring Boot 3.2.x (baseline - minimum supported)
+          - spring-boot: '3.2.0'
+            java: '17'
+          # Spring Boot 3.3.x
+          - spring-boot: '3.3.0'
+            java: '17'
+          - spring-boot: '3.3.0'
+            java: '21'
+          # Spring Boot 3.4.x (latest)
+          - spring-boot: '3.4.0'
+            java: '17'
+          - spring-boot: '3.4.0'
+            java: '21'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Run tests with Spring Boot ${{ matrix.spring-boot }}
+        run: |
+          mvn test -B \
+            -Dspring-boot.version=${{ matrix.spring-boot }} \
+            -Dmicrometer.version=$(case ${{ matrix.spring-boot }} in \
+              3.2.*) echo "1.12.0";; \
+              3.3.*) echo "1.13.0";; \
+              3.4.*) echo "1.14.0";; \
+              *) echo "1.12.0";; \
+            esac)
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-sb${{ matrix.spring-boot }}-java${{ matrix.java }}
+          path: |
+            **/target/surefire-reports/*.xml
+          retention-days: 7
+
+  # ============================================
   # Stage 3: Package
   # ============================================
   package:

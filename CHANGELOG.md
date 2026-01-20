@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Dashboard Authentication** - Comprehensive security system for protecting the J-Obs dashboard
+  - `JObsAuthenticationFilter` for Servlet-based applications (Spring MVC)
+  - `ReactiveAuthenticationFilter` for WebFlux-based applications
+  - `JObsSecurityAutoConfiguration` for automatic security setup
+  - Login page with dark/light mode support at `/j-obs/login`
+  - Three authentication types:
+    - `basic` - Username/password via login form or HTTP Basic Auth
+    - `api-key` - API key in header (`X-API-Key`) or query parameter (`api_key`)
+    - `both` - Both methods accepted
+  - Session-based authentication with configurable timeout
+  - Constant-time API key comparison for security (prevents timing attacks)
+  - Exempt paths configuration for static resources
+  - Comprehensive test coverage (21 tests)
+- New configuration options for security:
+  - `j-obs.security.enabled` - Enable/disable authentication (default: false)
+  - `j-obs.security.type` - Authentication type: `basic`, `api-key`, or `both`
+  - `j-obs.security.users` - List of users with username, password, and role
+  - `j-obs.security.api-keys` - List of valid API keys
+  - `j-obs.security.api-key-header` - Header name for API key (default: X-API-Key)
+  - `j-obs.security.session-timeout` - Session duration (default: 8h)
+  - `j-obs.security.exempt-paths` - Paths that bypass authentication
+- New endpoints for authentication:
+  - `GET /j-obs/login` - Login page
+  - `POST /j-obs/login` - Form login (username, password, redirect)
+  - `GET /j-obs/logout` - Browser logout (redirects to login)
+  - `POST /j-obs/api/logout` - API logout (returns JSON)
+
 ## [1.0.4] - 2026-01-19
 
 ### Changed
