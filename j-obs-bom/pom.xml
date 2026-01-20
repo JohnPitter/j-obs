@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-bom</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.10</version>
     <packaging>pom</packaging>
 
     <name>J-Obs BOM</name>
@@ -43,7 +43,7 @@
     </scm>
 
     <properties>
-        <j-obs.version>1.0.4</j-obs.version>
+        <j-obs.version>1.0.10</j-obs.version>
 
         <!-- Recommended dependency versions -->
         <spring-boot.version>3.2.0</spring-boot.version>

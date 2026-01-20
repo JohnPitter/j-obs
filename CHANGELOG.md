@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-01-20
+
 ### Added
 - **ConditionalOnServerContainer Annotation** - Custom condition for WebSocket configuration
   - `OnServerContainerCondition` checks for actual `ServerContainer` availability in `ServletContext`
