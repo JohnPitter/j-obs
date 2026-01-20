@@ -5,6 +5,7 @@ import io.github.jobs.infrastructure.InMemoryTraceRepository;
 import io.github.jobs.spring.trace.JObsSpanExporter;
 import io.github.jobs.spring.web.TraceApiController;
 import io.github.jobs.spring.web.TraceController;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -138,9 +139,32 @@ public class JObsTraceAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public OpenTelemetry openTelemetry(SdkTracerProvider sdkTracerProvider) {
-            return OpenTelemetrySdk.builder()
-                    .setTracerProvider(sdkTracerProvider)
-                    .buildAndRegisterGlobal();
+            // Check if GlobalOpenTelemetry is already initialized (e.g., by Spring Boot Actuator)
+            try {
+                OpenTelemetry existing = GlobalOpenTelemetry.get();
+                // If we get here without exception, it means GlobalOpenTelemetry was already set
+                // Check if it's not the default noop instance
+                if (existing != OpenTelemetry.noop()) {
+                    log.info("Using existing GlobalOpenTelemetry instance (already initialized by another library)");
+                    return existing;
+                }
+            } catch (IllegalStateException e) {
+                // GlobalOpenTelemetry.get() throws if not initialized - this is expected
+                log.debug("GlobalOpenTelemetry not yet initialized, J-Obs will initialize it");
+            }
+
+            // Build and register our OpenTelemetry instance
+            try {
+                OpenTelemetrySdk sdk = OpenTelemetrySdk.builder()
+                        .setTracerProvider(sdkTracerProvider)
+                        .buildAndRegisterGlobal();
+                log.info("J-Obs initialized GlobalOpenTelemetry");
+                return sdk;
+            } catch (IllegalStateException e) {
+                // Race condition: another thread registered GlobalOpenTelemetry between our check and registration
+                log.warn("GlobalOpenTelemetry was registered by another component, using existing instance");
+                return GlobalOpenTelemetry.get();
+            }
         }
 
         @Bean

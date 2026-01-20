@@ -249,6 +249,68 @@ management:
 </configuration>
 ```
 
+### Conflict with Spring Boot Actuator OpenTelemetry
+
+**Symptoms:**
+```
+java.lang.IllegalStateException: GlobalOpenTelemetry.set has already been called.
+GlobalOpenTelemetry.set must be called only once before any calls to GlobalOpenTelemetry.get.
+```
+
+**Cause:** Spring Boot Actuator has its own OpenTelemetry auto-configuration that initializes `GlobalOpenTelemetry` before J-Obs.
+
+**Solution:** As of v1.0.9+, J-Obs automatically detects and reuses existing `GlobalOpenTelemetry` instances. If you're on an older version, disable Spring Boot's tracing auto-configuration:
+
+```yaml
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.tracing.OpenTelemetryAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.tracing.MicrometerTracingAutoConfiguration
+```
+
+### TracingContext errors in @Scheduled methods
+
+**Symptoms:**
+```
+java.lang.IllegalArgumentException: Context does not have an entry for key
+[class io.micrometer.tracing.handler.TracingObservationHandler$TracingContext]
+```
+
+**Cause:** Spring Boot Actuator's Observation API instruments `@Scheduled` methods. When tracing is disabled or conflicts with J-Obs, the `TracingContext` is not available.
+
+**Solution:** Create a configuration to disable Observation for scheduled tasks:
+
+```java
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+
+@Configuration
+@ConditionalOnClass(ObservationRegistry.class)
+public class ObservabilityConfig implements SchedulingConfigurer {
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        taskRegistrar.setObservationRegistry(ObservationRegistry.NOOP);
+    }
+
+    @Bean
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.NOOP;
+    }
+}
+```
+
+Also add to your `application.yml`:
+```yaml
+management:
+  tracing:
+    enabled: false
+```
+
 ### Conflict with OTLP Agent
 
 **Symptoms:**
@@ -445,3 +507,5 @@ If your issue isn't covered here:
 | `Could not find artifact io.github.j-obs` | Change groupId to `io.github.johnpitter` |
 | `BeanDefinitionOverrideException` | Remove duplicate bean definitions |
 | `NoSuchMethodError` in OpenTelemetry | Check version compatibility |
+| `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
+| `Context does not have an entry for key TracingContext` | Add ObservabilityConfig with NOOP registry |
