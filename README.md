@@ -57,7 +57,7 @@ Use the **j-obs-bom** for version management. This BOM only manages J-Obs module
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.11</version>
+            <version>1.0.12</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -80,7 +80,7 @@ If you don't need BOM management, just add the dependency directly:
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.11</version>
+    <version>1.0.12</version>
 </dependency>
 ```
 

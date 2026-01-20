@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.12] - 2026-01-20
+
+### Fixed
+- **Dependency Management Strategy** - Removed explicit Micrometer versions from parent POM
+  - Micrometer versions are now fully managed by Spring Boot BOM
+  - Prevents `NoSuchMethodError` in Prometheus classes when using different Spring Boot versions
+  - Fixes `ExporterProperties.getPrometheusTimestampsInMs()` error with Spring Boot 3.4.x
+
+### Added
+- **OnServerContainerCondition Tests** - Comprehensive test coverage for WebSocket conditional loading
+  - 7 test cases covering all scenarios (MockServletContext, real container, null context, etc.)
+  - Validates automatic detection of test environments
+
+### Changed
+- **Documentation Improvements**
+  - README now recommends `j-obs-bom` over `j-obs-parent` for dependency management
+  - Added detailed compatibility matrix with Spring Boot and Micrometer versions
+  - New "Dependency Version Strategy" section explaining best practices
+  - TROUBLESHOOTING.md includes Prometheus version conflict workaround with 3 solutions
+  - Quick reference table updated with Prometheus error resolution
+
+### Important
+- **Users should use `j-obs-bom`** (not `j-obs-parent`) when importing J-Obs
+  - `j-obs-bom` only manages J-Obs module versions
+  - Does NOT override Spring Boot's dependency management
+  - Prevents version conflicts with Micrometer and Prometheus
+
 ## [1.0.11] - 2026-01-20
 
 ### Fixed
