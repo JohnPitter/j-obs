@@ -29,10 +29,18 @@ import java.util.Map;
 public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
 
     private volatile LogRepository logRepository;
-    private final LogEntryFactory logEntryFactory = new LogEntryFactory();
+    private volatile LogEntryFactory logEntryFactory;
 
     public void setLogRepository(LogRepository logRepository) {
         this.logRepository = logRepository;
+    }
+
+    public void setLogEntryFactory(LogEntryFactory logEntryFactory) {
+        this.logEntryFactory = logEntryFactory;
+    }
+
+    public LogEntryFactory getLogEntryFactory() {
+        return logEntryFactory;
     }
 
     @Override
@@ -53,8 +61,20 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
             return;
         }
 
+        // Lazy initialization of factory if not injected
+        LogEntryFactory factory = this.logEntryFactory;
+        if (factory == null) {
+            synchronized (this) {
+                factory = this.logEntryFactory;
+                if (factory == null) {
+                    factory = new LogEntryFactory();
+                    this.logEntryFactory = factory;
+                }
+            }
+        }
+
         // Use factory with pooled builders for better performance
-        LogEntry entry = logEntryFactory.create(
+        LogEntry entry = factory.create(
                 Instant.ofEpochMilli(event.getTimeStamp()),
                 convertLevel(event.getLevel()),
                 event.getLoggerName(),

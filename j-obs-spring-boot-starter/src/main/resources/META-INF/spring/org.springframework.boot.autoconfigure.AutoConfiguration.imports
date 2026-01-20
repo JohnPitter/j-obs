@@ -6,6 +6,7 @@ io.github.jobs.spring.autoconfigure.JObsTraceExportAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsLogAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsWebFluxLogAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsMetricAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsInternalMetricsAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsHealthAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsAlertAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsAlertNotificationAutoConfiguration

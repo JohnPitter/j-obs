@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import io.github.jobs.application.LogRepository;
 import io.github.jobs.infrastructure.InMemoryLogRepository;
 import io.github.jobs.spring.log.JObsLogAppender;
+import io.github.jobs.spring.log.LogEntryFactory;
 import io.github.jobs.spring.web.LogApiController;
 import io.github.jobs.spring.web.LogController;
 import io.github.jobs.spring.websocket.LogWebSocketHandler;
@@ -55,6 +56,12 @@ public class JObsLogAutoConfiguration {
         return new LogApiController(logRepository);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public LogEntryFactory logEntryFactory() {
+        return new LogEntryFactory();
+    }
+
     /**
      * Configuration for WebSocket support (optional).
      * <p>
@@ -101,9 +108,10 @@ public class JObsLogAutoConfiguration {
 
         @Bean
         @ConditionalOnMissingBean
-        public JObsLogAppender jObsLogAppender(LogRepository logRepository) {
+        public JObsLogAppender jObsLogAppender(LogRepository logRepository, LogEntryFactory logEntryFactory) {
             JObsLogAppender appender = new JObsLogAppender();
             appender.setLogRepository(logRepository);
+            appender.setLogEntryFactory(logEntryFactory);
             appender.setName("J-OBS");
             appender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
             appender.start();
