@@ -132,6 +132,12 @@ public class JObsProperties {
      */
     private Profiling profiling = new Profiling();
 
+    /**
+     * Observability compatibility configuration.
+     * Controls how J-Obs integrates with Spring Boot Actuator's observability features.
+     */
+    private Observability observability = new Observability();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -266,6 +272,58 @@ public class JObsProperties {
 
     public void setProfiling(Profiling profiling) {
         this.profiling = profiling;
+    }
+
+    public Observability getObservability() {
+        return observability;
+    }
+
+    public void setObservability(Observability observability) {
+        this.observability = observability;
+    }
+
+    /**
+     * Observability compatibility settings for integration with Spring Boot Actuator.
+     * <p>
+     * These settings help resolve conflicts between J-Obs and Spring Boot's built-in
+     * observability features (Micrometer Tracing, Observation API).
+     */
+    public static class Observability {
+
+        /**
+         * Use NOOP ObservationRegistry for @Scheduled tasks.
+         * <p>
+         * When enabled (default), scheduled tasks will use ObservationRegistry.NOOP,
+         * preventing TracingContext errors that occur when Spring Boot Actuator's
+         * tracing is disabled or conflicts with J-Obs.
+         * <p>
+         * Set to false if you want scheduled tasks to be observed by Spring Boot Actuator.
+         */
+        private boolean scheduledTasksNoop = true;
+
+        /**
+         * Filter out conflicting observations.
+         * <p>
+         * When enabled, an ObservationPredicate is registered to filter out
+         * observations that may conflict with J-Obs tracing.
+         */
+        private boolean filterConflicting = false;
+
+        public boolean isScheduledTasksNoop() {
+            return scheduledTasksNoop;
+        }
+
+        public void setScheduledTasksNoop(boolean scheduledTasksNoop) {
+            this.scheduledTasksNoop = scheduledTasksNoop;
+        }
+
+        public boolean isFilterConflicting() {
+            return filterConflicting;
+        }
+
+        public void setFilterConflicting(boolean filterConflicting) {
+            this.filterConflicting = filterConflicting;
+        }
     }
 
     /**

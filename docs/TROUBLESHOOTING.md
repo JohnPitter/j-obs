@@ -279,36 +279,31 @@ java.lang.IllegalArgumentException: Context does not have an entry for key
 
 **Cause:** Spring Boot Actuator's Observation API instruments `@Scheduled` methods. When tracing is disabled or conflicts with J-Obs, the `TracingContext` is not available.
 
-**Solution:** Create a configuration to disable Observation for scheduled tasks:
+**Solution:** As of v1.0.9+, J-Obs automatically configures scheduled tasks to use `ObservationRegistry.NOOP`, preventing this error. No manual configuration is needed.
+
+If you need to disable this automatic fix (e.g., you want Spring Boot Actuator to observe scheduled tasks):
+
+```yaml
+j-obs:
+  observability:
+    scheduled-tasks-noop: false
+```
+
+**For older versions (< 1.0.9):** Create a configuration manually:
 
 ```java
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 @Configuration
-@ConditionalOnClass(ObservationRegistry.class)
 public class ObservabilityConfig implements SchedulingConfigurer {
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
         taskRegistrar.setObservationRegistry(ObservationRegistry.NOOP);
     }
-
-    @Bean
-    public ObservationRegistry observationRegistry() {
-        return ObservationRegistry.NOOP;
-    }
 }
-```
-
-Also add to your `application.yml`:
-```yaml
-management:
-  tracing:
-    enabled: false
 ```
 
 ### Conflict with OTLP Agent

@@ -1,4 +1,5 @@
 io.github.jobs.spring.autoconfigure.JObsAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsObservabilityAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsSecurityAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsWebFluxAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsTraceAutoConfiguration

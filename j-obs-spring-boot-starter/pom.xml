@@ -105,12 +105,9 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Jaeger Exporter (optional - uses OTLP protocol) -->
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-jaeger</artifactId>
-            <optional>true</optional>
-        </dependency>
+        <!-- Note: Jaeger exporter was removed (deprecated).
+             Use OTLP exporter instead - Jaeger natively supports OTLP protocol.
+             Configure: j-obs.traces.export.otlp.endpoint=http://jaeger:4317 -->
 
         <!-- Testing -->
         <dependency>
