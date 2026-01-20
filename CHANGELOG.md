@@ -11,12 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ConditionalOnServerContainer Annotation** - Custom condition for WebSocket configuration
   - `OnServerContainerCondition` checks for actual `ServerContainer` availability in `ServletContext`
   - Prevents WebSocket auto-configuration from loading in test environments with `MockServletContext`
+- **Alternative Class Names Support** - Dependency checking now supports libraries with changed package names
+  - `Dependency.alternativeClassNames()` allows specifying fallback class names
+  - Supports all compatible versions of dependencies regardless of package changes
 
 ### Fixed
 - **MockServletContext Test Failures** - Fixed `ServerContainer not available` errors in Spring Boot tests
   - WebSocket configuration now only loads when a real `ServerContainer` is present
   - Tests using `@SpringBootTest` without `WebEnvironment.RANDOM_PORT` now work correctly
   - No manual workaround required (previously needed `j-obs.logs.websocket.enabled=false`)
+- **Micrometer 1.13+ Compatibility** - Fixed dependency check failing with newer Micrometer versions
+  - Micrometer 1.13 changed package from `io.micrometer.prometheus` to `io.micrometer.prometheusmetrics`
+  - Now checks both old and new class names to support all Micrometer versions
+  - Detected version is displayed correctly on the requirements page
 
 ## [1.0.9] - 2026-01-20
 

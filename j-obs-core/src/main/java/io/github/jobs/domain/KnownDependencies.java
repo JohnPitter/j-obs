@@ -42,8 +42,15 @@ public final class KnownDependencies {
             .documentationUrl("https://micrometer.io/docs")
             .build();
 
+    /**
+     * Micrometer Prometheus registry.
+     * <p>
+     * Note: In Micrometer 1.13+, the package changed from {@code io.micrometer.prometheus}
+     * to {@code io.micrometer.prometheusmetrics}. We check for both to support all versions.
+     */
     public static final Dependency MICROMETER_PROMETHEUS = Dependency.builder()
-            .className("io.micrometer.prometheus.PrometheusMeterRegistry")
+            .className("io.micrometer.prometheusmetrics.PrometheusMeterRegistry")
+            .alternativeClassNames("io.micrometer.prometheus.PrometheusMeterRegistry")
             .displayName("Micrometer Prometheus")
             .groupId("io.micrometer")
             .artifactId("micrometer-registry-prometheus")

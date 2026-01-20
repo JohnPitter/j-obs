@@ -97,15 +97,20 @@ public class ClasspathDependencyChecker implements DependencyChecker {
     }
 
     private DependencyStatus checkDependency(Dependency dependency) {
-        try {
-            Class<?> clazz = Class.forName(dependency.className());
-            String version = detectVersion(clazz, dependency).orElse(null);
-            return DependencyStatus.found(dependency, version);
-        } catch (ClassNotFoundException e) {
-            return DependencyStatus.notFound(dependency);
-        } catch (Exception e) {
-            return DependencyStatus.error(dependency, e.getMessage());
+        // Try all class names (primary first, then alternatives)
+        for (String className : dependency.allClassNames()) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                String version = detectVersion(clazz, dependency).orElse(null);
+                return DependencyStatus.found(dependency, version);
+            } catch (ClassNotFoundException e) {
+                // Continue to try next class name
+            } catch (Exception e) {
+                return DependencyStatus.error(dependency, e.getMessage());
+            }
         }
+        // None of the class names were found
+        return DependencyStatus.notFound(dependency);
     }
 
     private Optional<String> detectVersion(Class<?> clazz, Dependency dependency) {
