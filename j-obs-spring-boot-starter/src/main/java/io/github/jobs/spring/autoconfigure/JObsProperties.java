@@ -9,7 +9,40 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Configuration properties for J-Obs.
+ * Configuration properties for J-Obs observability dashboard.
+ * <p>
+ * All properties are prefixed with {@code j-obs} in application.yml or application.properties.
+ * <p>
+ * Example configuration:
+ * <pre>{@code
+ * j-obs:
+ *   enabled: true
+ *   path: /j-obs
+ *   logs:
+ *     enabled: true
+ *     max-entries: 10000
+ *   traces:
+ *     enabled: true
+ *     sample-rate: 1.0
+ *   security:
+ *     enabled: true
+ *     type: basic
+ *     users:
+ *       - username: admin
+ *         password: ${J_OBS_PASSWORD}
+ * }</pre>
+ * <p>
+ * Main configuration sections:
+ * <ul>
+ *   <li>{@link Security} - Authentication and authorization settings</li>
+ *   <li>{@link Logs} - Log collection and streaming configuration</li>
+ *   <li>{@link Traces} - Distributed tracing settings</li>
+ *   <li>{@link Metrics} - Metrics collection configuration</li>
+ *   <li>{@link Alerts} - Alert notification providers and rules</li>
+ *   <li>{@link Dashboard} - UI preferences and refresh rates</li>
+ * </ul>
+ *
+ * @see JObsAutoConfiguration
  */
 @ConfigurationProperties(prefix = "j-obs")
 public class JObsProperties {

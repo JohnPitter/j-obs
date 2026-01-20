@@ -6,7 +6,24 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Represents a single log entry.
+ * Represents a single log entry captured by J-Obs.
+ * <p>
+ * A log entry contains all the information about a logged event including:
+ * <ul>
+ *   <li>Timestamp when the log was generated</li>
+ *   <li>Log level (ERROR, WARN, INFO, DEBUG, TRACE)</li>
+ *   <li>Logger name (typically the class name)</li>
+ *   <li>Log message</li>
+ *   <li>Thread name where the log was generated</li>
+ *   <li>Optional trace/span IDs for correlation with distributed traces</li>
+ *   <li>Optional exception stack trace</li>
+ *   <li>MDC (Mapped Diagnostic Context) key-value pairs</li>
+ * </ul>
+ * <p>
+ * This class is immutable and thread-safe. Use {@link #builder()} to create instances.
+ *
+ * @see LogLevel
+ * @see LogQuery
  */
 public final class LogEntry {
 
@@ -34,28 +51,57 @@ public final class LogEntry {
         this.mdc = builder.mdc != null ? Map.copyOf(builder.mdc) : Map.of();
     }
 
+    /**
+     * Creates a new builder for constructing LogEntry instances.
+     *
+     * @return a new Builder instance
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns the unique identifier for this log entry.
+     *
+     * @return the log entry ID
+     */
     public String id() {
         return id;
     }
 
+    /**
+     * Returns the timestamp when this log entry was created.
+     *
+     * @return the timestamp
+     */
     public Instant timestamp() {
         return timestamp;
     }
 
+    /**
+     * Returns the log level of this entry.
+     *
+     * @return the log level
+     */
     public LogLevel level() {
         return level;
     }
 
+    /**
+     * Returns the full logger name (typically the fully qualified class name).
+     *
+     * @return the logger name, may be null
+     */
     public String loggerName() {
         return loggerName;
     }
 
     /**
-     * Returns the short logger name (last segment after dot).
+     * Returns the short logger name (last segment after the last dot).
+     * <p>
+     * For example, "com.example.MyClass" returns "MyClass".
+     *
+     * @return the short logger name, or the full name if no dots, or null if logger name is null
      */
     public String shortLoggerName() {
         if (loggerName == null) {
@@ -65,44 +111,94 @@ public final class LogEntry {
         return lastDot >= 0 ? loggerName.substring(lastDot + 1) : loggerName;
     }
 
+    /**
+     * Returns the log message.
+     *
+     * @return the log message
+     */
     public String message() {
         return message;
     }
 
+    /**
+     * Returns the name of the thread that generated this log entry.
+     *
+     * @return the thread name, may be null
+     */
     public String threadName() {
         return threadName;
     }
 
+    /**
+     * Returns the trace ID for distributed tracing correlation.
+     *
+     * @return the trace ID, may be null if not in a traced context
+     */
     public String traceId() {
         return traceId;
     }
 
+    /**
+     * Returns the span ID for distributed tracing correlation.
+     *
+     * @return the span ID, may be null if not in a traced context
+     */
     public String spanId() {
         return spanId;
     }
 
+    /**
+     * Checks if this log entry has an associated trace ID.
+     *
+     * @return true if trace ID is present and non-empty
+     */
     public boolean hasTraceId() {
         return traceId != null && !traceId.isEmpty();
     }
 
+    /**
+     * Returns the exception stack trace if this log entry represents an error with exception.
+     *
+     * @return the exception stack trace as string, may be null
+     */
     public String throwable() {
         return throwable;
     }
 
+    /**
+     * Checks if this log entry has an associated exception.
+     *
+     * @return true if an exception stack trace is present
+     */
     public boolean hasThrowable() {
         return throwable != null && !throwable.isEmpty();
     }
 
+    /**
+     * Returns the MDC (Mapped Diagnostic Context) key-value pairs.
+     *
+     * @return an unmodifiable map of MDC entries, never null
+     */
     public Map<String, String> mdc() {
         return mdc;
     }
 
+    /**
+     * Checks if this log entry represents an error condition.
+     * <p>
+     * A log entry is considered an error if its level is ERROR or if it has an exception.
+     *
+     * @return true if this is an error log entry
+     */
     public boolean hasError() {
         return level.isError() || hasThrowable();
     }
 
     /**
-     * Checks if this log entry matches the given query.
+     * Checks if this log entry matches the given query criteria.
+     *
+     * @param query the query to match against
+     * @return true if this entry matches all query criteria
      */
     public boolean matches(LogQuery query) {
         if (query.minLevel() != null && !level.isAtLeast(query.minLevel())) {

@@ -8,7 +8,26 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository for storing and querying traces.
+ * Repository interface for storing and querying distributed traces.
+ * <p>
+ * This is the main abstraction for trace storage in J-Obs. The default implementation
+ * {@code InMemoryTraceRepository} uses a concurrent map with TTL-based cleanup.
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Add spans which are automatically grouped by trace ID</li>
+ *   <li>Query traces with flexible filtering via {@link TraceQuery}</li>
+ *   <li>Get statistics about stored traces via {@link #stats()}</li>
+ *   <li>Automatic cleanup of old traces based on retention period</li>
+ * </ul>
+ * <p>
+ * Thread-safety: Implementations must be thread-safe as spans can be added
+ * concurrently from multiple threads.
+ *
+ * @see Span
+ * @see Trace
+ * @see TraceQuery
+ * @see io.github.jobs.infrastructure.InMemoryTraceRepository
  */
 public interface TraceRepository {
 

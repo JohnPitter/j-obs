@@ -10,7 +10,27 @@ import java.util.Objects;
 
 /**
  * Represents a single span in a distributed trace.
- * A span represents a single operation within a trace.
+ * <p>
+ * A span represents a single operation within a trace, such as an HTTP request,
+ * database query, or method call. Spans are the building blocks of distributed traces.
+ * <p>
+ * Key properties:
+ * <ul>
+ *   <li>{@code traceId} - Unique identifier for the entire trace</li>
+ *   <li>{@code spanId} - Unique identifier for this span</li>
+ *   <li>{@code parentSpanId} - ID of the parent span (null for root spans)</li>
+ *   <li>{@code name} - Human-readable operation name (e.g., "GET /api/users")</li>
+ *   <li>{@code kind} - Type of span (SERVER, CLIENT, PRODUCER, CONSUMER, INTERNAL)</li>
+ *   <li>{@code attributes} - Key-value pairs with additional context</li>
+ *   <li>{@code events} - Timestamped events that occurred during the span</li>
+ * </ul>
+ * <p>
+ * This class is immutable and thread-safe. Use {@link #builder()} to create instances.
+ *
+ * @see Trace
+ * @see SpanKind
+ * @see SpanStatus
+ * @see SpanEvent
  */
 public final class Span {
 

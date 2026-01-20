@@ -29,7 +29,37 @@ import org.springframework.context.annotation.Bean;
 import java.util.List;
 
 /**
- * Auto-configuration for J-Obs trace collection and visualization.
+ * Auto-configuration for J-Obs distributed trace collection and visualization.
+ * <p>
+ * This configuration is activated when {@code j-obs.traces.enabled} is {@code true} (default).
+ * <p>
+ * Components configured:
+ * <ul>
+ *   <li>{@link TraceRepository} - In-memory trace storage with TTL cleanup</li>
+ *   <li>{@link TraceController} - UI controller for trace viewer</li>
+ *   <li>{@link TraceApiController} - REST API for trace queries</li>
+ * </ul>
+ * <p>
+ * OpenTelemetry integration (when SDK is present):
+ * <ul>
+ *   <li>{@link JObsSpanExporter} - Exports spans to internal storage</li>
+ *   <li>{@link SdkTracerProvider} - Configured with service name and exporters</li>
+ *   <li>{@link OpenTelemetry} - Global OpenTelemetry instance</li>
+ *   <li>{@link Tracer} - Ready-to-use tracer for custom instrumentation</li>
+ * </ul>
+ * <p>
+ * Configuration properties under {@code j-obs.traces}:
+ * <ul>
+ *   <li>{@code enabled} - Enable/disable trace collection (default: true)</li>
+ *   <li>{@code max-traces} - Maximum traces in memory (default: 10000)</li>
+ *   <li>{@code retention} - How long to keep traces (default: 1h)</li>
+ *   <li>{@code sample-rate} - Sampling rate 0.0-1.0 (default: 1.0)</li>
+ *   <li>{@code export.*} - External exporter configuration (OTLP, Zipkin, Jaeger)</li>
+ * </ul>
+ *
+ * @see TraceRepository
+ * @see JObsTraceExportAutoConfiguration
+ * @see JObsProperties.Traces
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = "j-obs.traces.enabled", havingValue = "true", matchIfMissing = true)

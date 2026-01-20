@@ -17,8 +17,29 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Auto-configuration for J-Obs observability dashboard.
- * Automatically configures the dashboard when the starter is on the classpath.
+ * Main auto-configuration for the J-Obs observability dashboard.
+ * <p>
+ * This configuration is automatically activated when:
+ * <ul>
+ *   <li>The application is a servlet-based web application</li>
+ *   <li>The property {@code j-obs.enabled} is {@code true} (default)</li>
+ * </ul>
+ * <p>
+ * Features configured:
+ * <ul>
+ *   <li>{@link JObsController} - Main dashboard UI controller</li>
+ *   <li>{@link JObsApiController} - REST API endpoints</li>
+ *   <li>{@link DependencyChecker} - Runtime dependency verification</li>
+ *   <li>{@link RateLimiter} - API rate limiting protection</li>
+ *   <li>Static resource handling for dashboard assets</li>
+ * </ul>
+ * <p>
+ * Configuration properties are bound via {@link JObsProperties} with prefix {@code j-obs}.
+ *
+ * @see JObsProperties
+ * @see JObsLogAutoConfiguration
+ * @see JObsTraceAutoConfiguration
+ * @see JObsMetricAutoConfiguration
  */
 @AutoConfiguration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)

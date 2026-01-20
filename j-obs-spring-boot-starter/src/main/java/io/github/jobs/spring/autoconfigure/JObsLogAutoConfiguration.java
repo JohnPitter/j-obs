@@ -24,8 +24,32 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 /**
  * Auto-configuration for J-Obs log collection and real-time streaming.
  * <p>
- * WebSocket support is optional and will only be enabled when WebSocket
- * classes are available on the classpath.
+ * This configuration is activated when {@code j-obs.logs.enabled} is {@code true} (default).
+ * <p>
+ * Components configured:
+ * <ul>
+ *   <li>{@link LogRepository} - In-memory circular buffer for log storage</li>
+ *   <li>{@link LogController} - UI controller for log viewer</li>
+ *   <li>{@link LogApiController} - REST API for log queries</li>
+ *   <li>{@link LogEntryFactory} - Factory with object pooling for log entries</li>
+ * </ul>
+ * <p>
+ * Optional integrations (conditionally enabled):
+ * <ul>
+ *   <li><strong>WebSocket</strong> - Real-time log streaming when WebSocket is on classpath</li>
+ *   <li><strong>Logback</strong> - Automatic log capture via custom appender when Logback is present</li>
+ * </ul>
+ * <p>
+ * Configuration properties under {@code j-obs.logs}:
+ * <ul>
+ *   <li>{@code enabled} - Enable/disable log collection (default: true)</li>
+ *   <li>{@code max-entries} - Maximum log entries in buffer (default: 10000)</li>
+ *   <li>{@code min-level} - Minimum log level to capture (default: INFO)</li>
+ *   <li>{@code websocket.*} - WebSocket streaming configuration</li>
+ * </ul>
+ *
+ * @see LogRepository
+ * @see JObsProperties.Logs
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = "j-obs.logs.enabled", havingValue = "true", matchIfMissing = true)

@@ -15,14 +15,43 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Auto-configuration for J-Obs internal metrics.
+ * Auto-configuration for J-Obs internal metrics exposed via Micrometer.
  * <p>
- * Exposes internal J-Obs metrics via Micrometer:
+ * This configuration is activated when:
  * <ul>
- *   <li>jobs.logs.* - Log repository metrics</li>
- *   <li>jobs.traces.* - Trace repository metrics</li>
- *   <li>jobs.factory.* - LogEntryFactory pool metrics</li>
+ *   <li>Micrometer's {@link MeterRegistry} is available on classpath</li>
+ *   <li>A MeterRegistry bean exists in the context</li>
+ *   <li>Property {@code j-obs.metrics.internal.enabled} is {@code true} (default)</li>
  * </ul>
+ * <p>
+ * Metrics exposed (prefix: {@code jobs}):
+ * <p>
+ * <strong>Log metrics:</strong>
+ * <ul>
+ *   <li>{@code jobs.logs.stored} - Total log entries in buffer</li>
+ *   <li>{@code jobs.logs.buffer.capacity} - Maximum buffer capacity</li>
+ *   <li>{@code jobs.logs.buffer.utilization} - Buffer utilization percentage</li>
+ *   <li>{@code jobs.logs.by_level} - Log count by level (tagged)</li>
+ * </ul>
+ * <p>
+ * <strong>Trace metrics:</strong>
+ * <ul>
+ *   <li>{@code jobs.traces.stored} - Total traces in repository</li>
+ *   <li>{@code jobs.traces.spans.total} - Total spans across all traces</li>
+ *   <li>{@code jobs.traces.with_errors} - Traces containing errors</li>
+ *   <li>{@code jobs.traces.duration.avg} - Average trace duration (ms)</li>
+ *   <li>{@code jobs.traces.duration.p50/p95/p99} - Trace duration percentiles</li>
+ * </ul>
+ * <p>
+ * <strong>Factory metrics:</strong>
+ * <ul>
+ *   <li>{@code jobs.factory.pool.size} - Object pool size</li>
+ *   <li>{@code jobs.factory.ids.generated} - Total IDs generated</li>
+ * </ul>
+ *
+ * @see JObsInternalMetrics
+ * @see JObsLogAutoConfiguration
+ * @see JObsTraceAutoConfiguration
  */
 @AutoConfiguration(after = {
         CompositeMeterRegistryAutoConfiguration.class,

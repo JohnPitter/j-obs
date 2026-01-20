@@ -29,6 +29,39 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /**
  * Auto-configuration for J-Obs alert notification system.
+ * <p>
+ * This configuration is activated when {@code j-obs.alerts.enabled} is {@code true} (default)
+ * and runs after {@link JObsAlertAutoConfiguration} to ensure alert rules are available.
+ * <p>
+ * Components configured:
+ * <ul>
+ *   <li>{@link AlertEventRepository} - Storage for fired alert events</li>
+ *   <li>{@link AlertDispatcher} - Routes alerts to configured providers</li>
+ *   <li>{@link AlertEngine} - Evaluates alert conditions against metrics/logs/health</li>
+ *   <li>{@link AlertScheduler} - Periodic alert evaluation scheduler</li>
+ *   <li>{@link AlertGrouper} - Groups similar alerts to reduce noise</li>
+ *   <li>{@link AlertThrottler} - Rate limiting and cooldown for notifications</li>
+ * </ul>
+ * <p>
+ * Notification providers (registered automatically):
+ * <ul>
+ *   <li>{@link TelegramAlertProvider} - Telegram Bot API</li>
+ *   <li>{@link TeamsAlertProvider} - Microsoft Teams Webhook</li>
+ *   <li>{@link SlackAlertProvider} - Slack Webhook</li>
+ *   <li>{@link EmailAlertProvider} - SMTP Email</li>
+ *   <li>{@link WebhookAlertProvider} - Generic HTTP Webhook</li>
+ * </ul>
+ * <p>
+ * Configuration properties under {@code j-obs.alerts}:
+ * <ul>
+ *   <li>{@code enabled} - Enable/disable alerts (default: true)</li>
+ *   <li>{@code evaluation-interval} - How often to check conditions (default: 15s)</li>
+ *   <li>{@code throttling.*} - Rate limiting and grouping settings</li>
+ *   <li>{@code providers.*} - Provider-specific configuration</li>
+ * </ul>
+ *
+ * @see JObsAlertAutoConfiguration
+ * @see JObsProperties.Alerts
  */
 @AutoConfiguration(after = JObsAlertAutoConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)

@@ -8,7 +8,25 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Repository for storing and querying log entries.
+ * Repository interface for storing and querying log entries.
+ * <p>
+ * This is the main abstraction for log storage in J-Obs. The default implementation
+ * {@code InMemoryLogRepository} uses a circular buffer for efficient memory usage.
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Add and query log entries with flexible filtering</li>
+ *   <li>Subscribe to real-time log updates via {@link #subscribe(Consumer)}</li>
+ *   <li>Get statistics about stored logs via {@link #stats()}</li>
+ *   <li>Pagination support via {@link LogQuery}</li>
+ * </ul>
+ * <p>
+ * Thread-safety: Implementations must be thread-safe as log entries can be added
+ * concurrently from multiple threads.
+ *
+ * @see LogEntry
+ * @see LogQuery
+ * @see io.github.jobs.infrastructure.InMemoryLogRepository
  */
 public interface LogRepository {
 
