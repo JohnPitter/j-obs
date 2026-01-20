@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-01-20
+
+### Fixed
+- **WebSocket Configuration** - Fixed `NoClassDefFoundError` when WebSocket dependency is not present
+  - Added `ServletServerContainerFactoryBean` to `@ConditionalOnClass` in `JObsWebSocketConfiguration`
+  - Configuration now properly skipped when spring-boot-starter-websocket is not in classpath
+
 ### Added
 - **JavaDoc Documentation** - Comprehensive JavaDoc for public APIs
   - Domain classes: `LogEntry`, `LogLevel`, `Span`, `AlertProvider`
