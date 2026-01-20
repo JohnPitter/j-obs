@@ -39,7 +39,7 @@ public class JObsSloAutoConfiguration {
     @ConditionalOnBean({SloRepository.class, MeterRegistry.class})
     @ConditionalOnProperty(prefix = "j-obs.slo", name = "enabled", havingValue = "true", matchIfMissing = true)
     public SloService sloService(SloRepository repository, MeterRegistry meterRegistry) {
-        log.info("Creating SLO service");
+        log.debug("Creating SLO service");
         return new DefaultSloService(repository, meterRegistry);
     }
 

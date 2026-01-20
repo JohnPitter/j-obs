@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-configurations: `JObsAutoConfiguration`, `JObsProperties`, `JObsLogAutoConfiguration`, `JObsTraceAutoConfiguration`, `JObsAlertNotificationAutoConfiguration`, `JObsInternalMetricsAutoConfiguration`
   - Alert providers: All five providers with configuration examples and usage documentation
 
+### Changed
+- **Code Quality Improvements**
+  - Extracted magic constants to named static finals in repository classes:
+    - `DEFAULT_MAX_EVENTS` in `InMemoryAlertEventRepository`
+    - `DEFAULT_MAX_HISTORY_PER_SLO` in `InMemorySloRepository`
+    - `DEFAULT_MAX_SESSIONS` in `InMemoryProfilingRepository`
+  - Standardized logging levels across all components (DEBUG for routine operations, INFO for important events, WARN for recoverable issues, ERROR for failures)
+
 ## [1.0.5] - 2026-01-19
 
 ### Added

@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
  */
 public class InMemoryProfilingRepository {
 
+    private static final int DEFAULT_MAX_SESSIONS = 100;
+
     private final Map<String, ProfileSession> sessions = new ConcurrentHashMap<>();
     private final int maxSessions;
 
@@ -21,7 +23,7 @@ public class InMemoryProfilingRepository {
     }
 
     public InMemoryProfilingRepository() {
-        this(100);
+        this(DEFAULT_MAX_SESSIONS);
     }
 
     /**

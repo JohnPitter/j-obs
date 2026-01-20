@@ -16,11 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryAlertEventRepository implements AlertEventRepository {
 
+    private static final int DEFAULT_MAX_EVENTS = 10000;
+
     private final Map<String, AlertEvent> events = new ConcurrentHashMap<>();
     private final int maxEvents;
 
     public InMemoryAlertEventRepository() {
-        this(10000);
+        this(DEFAULT_MAX_EVENTS);
     }
 
     public InMemoryAlertEventRepository(int maxEvents) {

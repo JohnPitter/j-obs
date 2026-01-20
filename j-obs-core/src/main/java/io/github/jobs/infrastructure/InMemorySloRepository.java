@@ -13,12 +13,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class InMemorySloRepository implements SloRepository {
 
+    private static final int DEFAULT_MAX_HISTORY_PER_SLO = 100;
+
     private final Map<String, Slo> slos = new ConcurrentHashMap<>();
     private final Map<String, Deque<SloEvaluation>> evaluationHistory = new ConcurrentHashMap<>();
     private final int maxHistoryPerSlo;
 
     public InMemorySloRepository() {
-        this(100);
+        this(DEFAULT_MAX_HISTORY_PER_SLO);
     }
 
     public InMemorySloRepository(int maxHistoryPerSlo) {
