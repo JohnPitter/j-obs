@@ -11,6 +11,7 @@
 
 *Complete out-of-the-box observability with a single dependency*
 
+[Requirements](#requirements) •
 [Quick Start](#quick-start) •
 [Features](#features) •
 [Configuration](#configuration) •
@@ -106,6 +107,104 @@ On-demand CPU, Memory, and Thread profiling to identify performance bottlenecks.
 - Identify blocked and waiting threads
 - Deadlock detection
 - Stack trace analysis
+
+---
+
+## Requirements
+
+### System Requirements
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **Java** | 17+ | LTS versions recommended (17, 21) |
+| **Spring Boot** | 3.2+ | Tested with 3.2.x, 3.3.x, 3.4.x |
+| **Maven** | 3.6+ | Or Gradle 7.5+ |
+
+### Required Dependencies
+
+These dependencies are **required** and must be present in your application:
+
+| Dependency | Artifact | Purpose |
+|------------|----------|---------|
+| **Spring Boot Starter Web** | `spring-boot-starter-web` | HTTP server (MVC or WebFlux) |
+| **Spring Boot Actuator** | `spring-boot-starter-actuator` | Health endpoints and metrics exposure |
+| **Micrometer Prometheus** | `micrometer-registry-prometheus` | Metrics collection and export |
+
+### Optional Dependencies
+
+These dependencies enable additional features:
+
+| Dependency | Artifact | Feature |
+|------------|----------|---------|
+| **WebSocket** | `spring-boot-starter-websocket` | Real-time log streaming |
+| **Mail** | `spring-boot-starter-mail` | Email alert notifications |
+| **OpenTelemetry** | `opentelemetry-spring-boot-starter` | Distributed tracing |
+
+### Minimal `pom.xml` Example
+
+```xml
+<dependencies>
+    <!-- Your application -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Required for J-Obs -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!-- J-Obs -->
+    <dependency>
+        <groupId>io.github.johnpitter</groupId>
+        <artifactId>j-obs-spring-boot-starter</artifactId>
+        <version>1.0.5</version>
+    </dependency>
+
+    <!-- Optional: Real-time log streaming -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+</dependencies>
+```
+
+### Minimal `application.yml`
+
+```yaml
+spring:
+  application:
+    name: my-app
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+j-obs:
+  enabled: true
+```
+
+### Compatibility Matrix
+
+| Spring Boot | Java | J-Obs | Status |
+|-------------|------|-------|--------|
+| 3.4.x | 17, 21 | 1.0.5+ | ✅ Fully tested |
+| 3.3.x | 17, 21 | 1.0.5+ | ✅ Fully tested |
+| 3.2.x | 17, 21 | 1.0.5+ | ✅ Fully tested |
+| 3.1.x | 17 | 1.0.5+ | ⚠️ Should work |
+| 3.0.x | 17 | 1.0.5+ | ⚠️ Should work |
+| 2.x | 8, 11, 17 | - | ❌ Not supported |
 
 ---
 
