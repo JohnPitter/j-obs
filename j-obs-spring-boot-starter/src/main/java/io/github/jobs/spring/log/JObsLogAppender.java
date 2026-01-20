@@ -16,11 +16,20 @@ import java.util.Map;
 
 /**
  * Logback appender that captures log events and stores them in the LogRepository.
+ * <p>
  * Thread-safe: logRepository is volatile to ensure visibility when set from Spring context.
+ * <p>
+ * Performance optimizations:
+ * <ul>
+ *   <li>Uses LogEntryFactory with pooled builders to reduce GC pressure</li>
+ *   <li>Fast ID generation using atomic counter instead of UUID</li>
+ *   <li>Early return for J-Obs internal logs to avoid circular logging</li>
+ * </ul>
  */
 public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
 
     private volatile LogRepository logRepository;
+    private final LogEntryFactory logEntryFactory = new LogEntryFactory();
 
     public void setLogRepository(LogRepository logRepository) {
         this.logRepository = logRepository;
@@ -44,17 +53,18 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
             return;
         }
 
-        LogEntry entry = LogEntry.builder()
-                .timestamp(Instant.ofEpochMilli(event.getTimeStamp()))
-                .level(convertLevel(event.getLevel()))
-                .loggerName(event.getLoggerName())
-                .message(event.getFormattedMessage())
-                .threadName(event.getThreadName())
-                .traceId(extractTraceId(event))
-                .spanId(extractSpanId(event))
-                .throwable(formatThrowable(event.getThrowableProxy()))
-                .mdc(Map.copyOf(event.getMDCPropertyMap()))
-                .build();
+        // Use factory with pooled builders for better performance
+        LogEntry entry = logEntryFactory.create(
+                Instant.ofEpochMilli(event.getTimeStamp()),
+                convertLevel(event.getLevel()),
+                event.getLoggerName(),
+                event.getFormattedMessage(),
+                event.getThreadName(),
+                extractTraceId(event),
+                extractSpanId(event),
+                formatThrowable(event.getThrowableProxy()),
+                Map.copyOf(event.getMDCPropertyMap())
+        );
 
         repo.add(entry);
     }

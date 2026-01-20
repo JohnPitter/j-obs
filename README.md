@@ -219,6 +219,7 @@ public class OrderService {
 | [CONFIGURATION.md](docs/CONFIGURATION.md) | All configuration options |
 | [SECURITY.md](docs/SECURITY.md) | Authentication and security |
 | [ACTUATOR.md](docs/ACTUATOR.md) | API endpoints reference |
+| [OTLP_INTEGRATION.md](docs/OTLP_INTEGRATION.md) | OTLP agent and external collectors |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 | [GETTING_STARTED.md](docs/GETTING_STARTED.md) | Step-by-step tutorial |
 
