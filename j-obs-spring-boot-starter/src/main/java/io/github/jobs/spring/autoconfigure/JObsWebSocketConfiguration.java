@@ -20,12 +20,11 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  * <p>
  * This configuration is only loaded when:
  * <ul>
- *   <li>WebSocket classes are on the classpath</li>
- *   <li>A real {@link ServerContainer} is available in the ServletContext</li>
+ *   <li>WebSocket classes are on the classpath ({@code spring-boot-starter-websocket})</li>
+ *   <li>{@code j-obs.enabled} is {@code true} (default)</li>
  * </ul>
  * <p>
- * In test environments using {@code MockServletContext}, the ServerContainer
- * is not available, so this configuration will be skipped automatically.
+ * In test environments, disable with {@code j-obs.enabled=false}.
  * <p>
  * Configuration properties:
  * <ul>
@@ -36,7 +35,6 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  */
 @Configuration
 @ConditionalOnClass({ServerContainer.class, ServletServerContainerFactoryBean.class})
-@ConditionalOnServerContainer
 @ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsWebSocketConfiguration {
