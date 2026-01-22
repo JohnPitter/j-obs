@@ -1,6 +1,6 @@
-# Resposta ao Relatório de Integração - J-Obs v1.0.9 → v1.0.12
+# Resposta ao Relatório de Integração - J-Obs v1.0.9 → v1.0.13
 
-**Data:** 20/01/2026
+**Data:** 22/01/2026
 **De:** Equipe J-Obs
 **Para:** Equipe gacb-srv-activation
 **Referência:** Relatório de Integração J-Obs v1.0.9
@@ -9,13 +9,14 @@
 
 ## Resumo Executivo
 
-Agradecemos o relatório detalhado de integração. Todos os problemas reportados foram analisados e corrigidos na versão **1.0.12**, lançada hoje.
+Agradecemos o relatório detalhado de integração. Todos os problemas reportados foram analisados e corrigidos na versão **1.0.13**, a versão mais recente.
 
 | Problema Reportado | Status | Versão da Correção |
 |-------------------|--------|-------------------|
 | Conflito de versões do Prometheus | ✅ **CORRIGIDO** | 1.0.12 |
 | Estrutura Maven com múltiplos parents | ✅ **DOCUMENTADO** | 1.0.12 |
 | Falha em testes com MockServletContext | ✅ **JÁ CORRIGIDO** | 1.0.10 |
+| Erro JavaScript no dashboard de Traces | ✅ **CORRIGIDO** | 1.0.13 |
 
 ---
 
@@ -37,7 +38,7 @@ O `j-obs-parent` declarava versões explícitas do Micrometer (1.12.0) que confl
 - Isso elimina conflitos de dependências transitivas do Prometheus
 
 **Ação necessária:**
-Atualizar para v1.0.12 e usar `j-obs-bom` (não `j-obs-parent`):
+Atualizar para v1.0.13 e usar `j-obs-bom` (não `j-obs-parent`):
 
 ```xml
 <dependencyManagement>
@@ -45,7 +46,7 @@ Atualizar para v1.0.12 e usar `j-obs-bom` (não `j-obs-parent`):
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.12</version>
+            <version>1.0.13</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -64,7 +65,7 @@ Usuários estavam importando `j-obs-parent` como BOM, causando conflitos de vers
 - `j-obs-parent` é o POM pai para módulos internos do J-Obs, **não é um BOM para usuários**
 - `j-obs-bom` é o artefato correto para importação em projetos externos
 
-**Correção implementada (v1.0.12):**
+**Correção implementada (v1.0.12+):**
 - README atualizado com instruções claras de uso do `j-obs-bom`
 - Adicionada seção "Dependency Version Strategy" explicando a estratégia
 - `j-obs-bom` só gerencia versões dos módulos J-Obs, não sobrescreve dependências do Spring Boot
@@ -77,7 +78,7 @@ Usuários estavam importando `j-obs-parent` como BOM, causando conflitos de vers
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.12</version>
+            <version>1.0.13</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -104,11 +105,11 @@ Este problema já foi corrigido na **v1.0.10** com a introdução da annotation 
 - Em ambientes de teste com `MockServletContext`, a condição retorna `noMatch`
 - A configuração de WebSocket é automaticamente ignorada
 
-**Na v1.0.12 adicionamos:**
+**Na v1.0.12+ adicionamos:**
 - 7 testes unitários validando todos os cenários da condição
 - Mensagem de log clara: `"ServerContainer not found in ServletContext (test environment with MockServletContext?)"`
 
-**Com v1.0.12, NÃO é mais necessário:**
+**Com v1.0.13, NÃO é mais necessário:**
 ```java
 // ❌ Não precisa mais dessa exclusão
 @SpringBootTest(properties = {
@@ -125,25 +126,42 @@ j-obs:
 
 ---
 
+### 4. Erro JavaScript no Dashboard de Traces - CORRIGIDO ✅
+
+**Problema identificado internamente (v1.0.12):**
+```
+Uncaught TypeError: {(intermediate value)(intermediate value)} is not a function
+    at traces-list.html:1:1
+```
+
+**Causa raiz identificada:**
+Falta de ponto-e-vírgula após o objeto `tailwind.config` nos templates HTML, causando erro de sintaxe JavaScript quando seguido por IIFE (Immediately Invoked Function Expression).
+
+**Correção implementada (v1.0.13):**
+- Adicionado ponto-e-vírgula após todas as declarações `tailwind.config` em 10 templates HTML
+- Templates corrigidos: traces-list.html, logs.html, metrics.html, health.html, alerts.html, layout.html, login.html, requirements.html, index.html, tools-page-wrapper.html
+
+---
+
 ## Matriz de Compatibilidade Atualizada
 
 | Spring Boot | Micrometer | J-Obs | Status |
 |-------------|------------|-------|--------|
-| 3.4.x | 1.14.x | 1.0.12 | ✅ Testado |
-| 3.3.x | 1.13.x | 1.0.12 | ✅ Testado |
-| 3.2.x | 1.12.x | 1.0.12 | ✅ Testado |
+| 3.4.x | 1.14.x | 1.0.13 | ✅ Testado |
+| 3.3.x | 1.13.x | 1.0.13 | ✅ Testado |
+| 3.2.x | 1.12.x | 1.0.13 | ✅ Testado |
 
 ---
 
 ## Ações Recomendadas para o Projeto gacb-srv-activation
 
-### 1. Atualizar para v1.0.12
+### 1. Atualizar para v1.0.13
 
 ```xml
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.12</version>
+    <version>1.0.13</version>
 </dependency>
 ```
 
@@ -177,7 +195,7 @@ Se quiser centralizar a versão do J-Obs:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.12</version>
+            <version>1.0.13</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -205,9 +223,11 @@ class MeuTesteIntegracao {
 
 ## Artefatos no Maven Central
 
-A versão 1.0.12 será publicada no Maven Central nas próximas horas. Enquanto isso, os artefatos estão disponíveis via GitHub Packages.
+A versão 1.0.13 será publicada no Maven Central nas próximas horas. Enquanto isso, os artefatos estão disponíveis via GitHub Packages.
 
-**Release Notes:** https://github.com/JohnPitter/j-obs/releases/tag/v1.0.12
+**Release Notes:**
+- v1.0.13: https://github.com/JohnPitter/j-obs/releases/tag/v1.0.13
+- v1.0.12: https://github.com/JohnPitter/j-obs/releases/tag/v1.0.12
 
 ---
 
