@@ -299,20 +299,28 @@
 
                 loadHealth() {
                     fetch('{{BASE_PATH}}/api/health')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.health = data;
                             this.lastCheckTime = data.timestamp;
-                        });
+                        })
+                        .catch(err => console.error('J-Obs: Failed to load health', err));
                 },
 
                 refreshHealth() {
                     fetch('{{BASE_PATH}}/api/health/refresh', { method: 'POST' })
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.health = data;
                             this.lastCheckTime = data.timestamp;
-                        });
+                        })
+                        .catch(err => console.error('J-Obs: Failed to refresh health', err));
                 },
 
                 formatTime(timestamp) {

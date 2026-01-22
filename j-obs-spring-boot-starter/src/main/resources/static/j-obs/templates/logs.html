@@ -355,34 +355,69 @@
                     return Math.max(1, Math.ceil(this.paginatedTotal / this.limit));
                 },
 
+                reconnectAttempts: 0,
+                maxReconnectAttempts: 10,
+                baseReconnectDelay: 1000,
+
                 init() {
                     this.connect();
                     this.loadInitialLogs();
                 },
 
                 connect() {
+                    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                        console.warn('J-Obs: Max WebSocket reconnection attempts reached');
+                        return;
+                    }
+
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     const wsUrl = protocol + '//' + window.location.host + '{{BASE_PATH}}/ws/logs';
 
-                    this.ws = new WebSocket(wsUrl);
+                    try {
+                        this.ws = new WebSocket(wsUrl);
+                    } catch (e) {
+                        console.error('J-Obs: Failed to create WebSocket', e);
+                        this.scheduleReconnect();
+                        return;
+                    }
 
                     this.ws.onopen = () => {
                         this.connected = true;
+                        this.reconnectAttempts = 0;
                         this.applyFilters();
                     };
 
                     this.ws.onclose = () => {
                         this.connected = false;
-                        setTimeout(() => this.connect(), 3000);
+                        this.scheduleReconnect();
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('J-Obs: WebSocket error', error);
                     };
 
                     this.ws.onmessage = (event) => {
                         if (this.viewMode !== 'stream') return;
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'log') {
-                            this.addLog(data.data);
+                        try {
+                            const data = JSON.parse(event.data);
+                            if (data.type === 'log') {
+                                this.addLog(data.data);
+                            }
+                        } catch (e) {
+                            console.error('J-Obs: Failed to parse WebSocket message', e);
                         }
                     };
+                },
+
+                scheduleReconnect() {
+                    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                        console.warn('J-Obs: Max WebSocket reconnection attempts reached');
+                        return;
+                    }
+                    const delay = Math.min(this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+                    this.reconnectAttempts++;
+                    console.log(`J-Obs: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => this.connect(), delay);
                 },
 
                 loadInitialLogs() {
@@ -394,10 +429,16 @@
                     if (this.filters.message) params.set('message', this.filters.message);
 
                     fetch('{{BASE_PATH}}/api/logs?' + params)
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
-                            this.logs = data.logs;
-                            this.totalLogs = data.total;
+                            this.logs = data.logs || [];
+                            this.totalLogs = data.total || 0;
+                        })
+                        .catch(err => {
+                            console.error('J-Obs: Failed to load logs', err);
                         });
                 },
 
@@ -411,10 +452,16 @@
                     if (this.filters.message) params.set('message', this.filters.message);
 
                     fetch('{{BASE_PATH}}/api/logs?' + params)
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
-                            this.paginatedLogs = data.logs;
-                            this.paginatedTotal = data.total;
+                            this.paginatedLogs = data.logs || [];
+                            this.paginatedTotal = data.total || 0;
+                        })
+                        .catch(err => {
+                            console.error('J-Obs: Failed to load paginated logs', err);
                         });
                 },
 

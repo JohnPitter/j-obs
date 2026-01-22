@@ -62,7 +62,7 @@ This guide helps you resolve common issues when integrating J-Obs into your Spri
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.14</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -114,7 +114,7 @@ This typically occurs when:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.14</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -615,6 +615,76 @@ If your issue isn't covered here:
 
 ---
 
+## Custom Interceptor Warnings
+
+### "Ação não encontrada no MDC" or similar MDC warnings
+
+**Symptoms:**
+```
+WARN LoggerInterceptor - Ação não encontrada no MDC. Não será possível registrar o log
+```
+
+or similar warnings about missing context in custom interceptors when accessing J-Obs endpoints.
+
+**Cause:** Many applications have custom interceptors (like `LoggerInterceptor`) that expect certain context to be present in the MDC (Mapped Diagnostic Context) for audit logging. J-Obs dashboard endpoints don't populate these fields because they're internal observability endpoints.
+
+**Solutions:**
+
+**Option 1 (Recommended):** Exclude J-Obs endpoints from your interceptor:
+
+```java
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private LoggerInterceptor loggerInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loggerInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns("/j-obs/**");  // Exclude J-Obs endpoints
+    }
+}
+```
+
+**Option 2:** Modify your interceptor to skip J-Obs endpoints:
+
+```java
+@Override
+public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                           Object handler, Exception ex) {
+    String requestURI = request.getRequestURI();
+
+    // Skip logging for J-Obs internal endpoints
+    if (requestURI.startsWith("/j-obs/")) {
+        return;
+    }
+
+    // Your existing logging logic...
+    String acao = MDC.get("acao");
+    if (acao == null) {
+        logger.warn("Ação não encontrada no MDC...");
+        return;
+    }
+    // ...
+}
+```
+
+**Option 3:** Use a custom path for J-Obs and exclude it:
+
+```yaml
+# application.yml
+j-obs:
+  path: /internal/observability
+```
+
+Then exclude `/internal/**` from your interceptor.
+
+**Note:** This is not a bug in J-Obs. J-Obs dashboard endpoints are internal observability tools and don't require application-specific MDC context.
+
+---
+
 ## Common Error Messages Quick Reference
 
 | Error Message | Solution |
@@ -630,3 +700,4 @@ If your issue isn't covered here:
 | `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
 | `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |
 | J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.13+ where ALL configs respect `j-obs.enabled` |
+| `Ação não encontrada no MDC` or similar MDC warnings | Exclude `/j-obs/**` from your custom interceptors - see [Custom Interceptor Warnings](#custom-interceptor-warnings) |

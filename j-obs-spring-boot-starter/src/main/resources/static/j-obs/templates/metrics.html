@@ -629,44 +629,62 @@
                     if (this.filters.category) url += '&category=' + encodeURIComponent(this.filters.category);
 
                     fetch(url)
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
-                            this.metrics = data.metrics;
-                            this.totalMetrics = data.total;
-                        });
+                            this.metrics = data.metrics || [];
+                            this.totalMetrics = data.total || 0;
+                        })
+                        .catch(err => console.error('J-Obs: Failed to load metrics', err));
                 },
 
                 loadCategories() {
                     fetch('{{BASE_PATH}}/api/metrics/categories')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
-                            this.categories = data;
-                        });
+                            this.categories = data || [];
+                        })
+                        .catch(err => console.error('J-Obs: Failed to load categories', err));
                 },
 
                 loadStats() {
                     fetch('{{BASE_PATH}}/api/metrics/stats')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
-                            this.stats = data;
-                        });
+                            this.stats = data || {};
+                        })
+                        .catch(err => console.error('J-Obs: Failed to load stats', err));
                 },
 
                 refreshMetrics() {
                     fetch('{{BASE_PATH}}/api/metrics/refresh', { method: 'POST' })
-                        .then(() => {
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
                             this.loadMetrics();
                             this.loadStats();
-                        });
+                        })
+                        .catch(err => console.error('J-Obs: Failed to refresh metrics', err));
                 },
 
                 showMetricDetail(metric) {
                     fetch('{{BASE_PATH}}/api/metrics/' + encodeURIComponent(metric.id))
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.selectedMetric = data;
                             this.$nextTick(() => this.renderChart(data));
-                        });
+                        })
+                        .catch(err => console.error('J-Obs: Failed to load metric detail', err));
                 },
 
                 renderChart(metric) {

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.14] - 2026-01-22
+
+### Fixed
+- **WebSocket reconnection with exponential backoff** - Logs WebSocket now has:
+  - Maximum reconnection attempts limit (10)
+  - Exponential backoff delay (1s, 2s, 4s... up to 30s)
+  - Error event handling and logging
+  - JSON parse error handling for malformed messages
+- **HTTP response validation in all dashboard templates** - All `fetch()` calls now:
+  - Check `res.ok` before parsing JSON (prevents silent failures on 4xx/5xx responses)
+  - Include `.catch()` handlers with meaningful error logging
+  - Use fallback values (`|| []`, `|| 0`) to prevent undefined errors
+  - Affected files: index.html, logs.html, traces-list.html, trace-detail.html, metrics.html, health.html, alerts.html, sql-analyzer.html
+- **Promise.all error handling** - `init()` functions in alerts.html and sql-analyzer.html now wrapped in try/catch
+- **Missing semicolon in trace-detail.html** - Added semicolon after `tailwind.config` object declaration
+
+### Added
+- **Troubleshooting guide for custom interceptor warnings** - Documentation on how to exclude J-Obs endpoints from custom interceptors (e.g., LoggerInterceptor) to avoid MDC-related warnings
+
 ## [1.0.13] - 2026-01-21
 
 ### Fixed

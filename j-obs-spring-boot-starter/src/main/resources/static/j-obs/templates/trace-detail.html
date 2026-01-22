@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <script>
-        tailwind.config = { darkMode: 'class' }
+        tailwind.config = { darkMode: 'class' };
     </script>
     <style>
         .glass-card {
@@ -411,17 +411,27 @@
                 logLevel: '',
 
                 async init() {
-                    const res = await fetch('{{BASE_PATH}}/api/traces/{{TRACE_ID}}');
-                    this.trace = await res.json();
-                    this.loadLogs();
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/traces/{{TRACE_ID}}');
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        this.trace = await res.json();
+                        this.loadLogs();
+                    } catch (err) {
+                        console.error('J-Obs: Failed to load trace', err);
+                    }
                 },
 
                 async loadLogs() {
-                    const params = new URLSearchParams({ traceId: '{{TRACE_ID}}' });
-                    if (this.logLevel) params.set('level', this.logLevel);
-                    const res = await fetch('{{BASE_PATH}}/api/logs?' + params);
-                    const data = await res.json();
-                    this.logs = data.logs || [];
+                    try {
+                        const params = new URLSearchParams({ traceId: '{{TRACE_ID}}' });
+                        if (this.logLevel) params.set('level', this.logLevel);
+                        const res = await fetch('{{BASE_PATH}}/api/logs?' + params);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const data = await res.json();
+                        this.logs = data.logs || [];
+                    } catch (err) {
+                        console.error('J-Obs: Failed to load logs', err);
+                    }
                 },
 
                 formatLogTime(isoString) {

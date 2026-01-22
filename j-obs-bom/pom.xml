@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-bom</artifactId>
-    <version>1.0.13</version>
+    <version>1.0.14</version>
     <packaging>pom</packaging>
 
     <name>J-Obs BOM</name>
@@ -43,7 +43,7 @@
     </scm>
 
     <properties>
-        <j-obs.version>1.0.13</j-obs.version>
+        <j-obs.version>1.0.14</j-obs.version>
     </properties>
 
     <dependencyManagement>

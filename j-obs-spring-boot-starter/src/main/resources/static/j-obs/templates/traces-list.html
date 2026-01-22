@@ -331,31 +331,46 @@
                 },
 
                 async loadTraces() {
-                    const params = new URLSearchParams({ limit: this.limit, offset: this.offset });
-                    if (this.filters.service) params.set('service', this.filters.service);
-                    if (this.filters.status) params.set('status', this.filters.status);
-                    if (this.filters.minDurationMs) params.set('minDurationMs', this.filters.minDurationMs);
+                    try {
+                        const params = new URLSearchParams({ limit: this.limit, offset: this.offset });
+                        if (this.filters.service) params.set('service', this.filters.service);
+                        if (this.filters.status) params.set('status', this.filters.status);
+                        if (this.filters.minDurationMs) params.set('minDurationMs', this.filters.minDurationMs);
 
-                    const res = await fetch('{{BASE_PATH}}/api/traces?' + params);
-                    const data = await res.json();
-                    this.traces = data.traces;
-                    this.total = data.total;
+                        const res = await fetch('{{BASE_PATH}}/api/traces?' + params);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const data = await res.json();
+                        this.traces = data.traces || [];
+                        this.total = data.total || 0;
+                    } catch (err) {
+                        console.error('J-Obs: Failed to load traces', err);
+                    }
                 },
 
                 async loadServices() {
-                    const res = await fetch('{{BASE_PATH}}/api/traces/services');
-                    this.services = await res.json();
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/traces/services');
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        this.services = await res.json();
+                    } catch (err) {
+                        console.error('J-Obs: Failed to load services', err);
+                    }
                 },
 
                 async loadStats() {
-                    const res = await fetch('{{BASE_PATH}}/api/traces/stats');
-                    const data = await res.json();
-                    this.stats = {
-                        totalTraces: data.totalTraces,
-                        errorRate: data.totalTraces > 0 ? (data.errorTraces / data.totalTraces) * 100 : 0,
-                        avgDurationMs: data.avgDurationMs || 0,
-                        p99DurationMs: data.p99DurationMs || 0
-                    };
+                    try {
+                        const res = await fetch('{{BASE_PATH}}/api/traces/stats');
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const data = await res.json();
+                        this.stats = {
+                            totalTraces: data.totalTraces || 0,
+                            errorRate: data.totalTraces > 0 ? (data.errorTraces / data.totalTraces) * 100 : 0,
+                            avgDurationMs: data.avgDurationMs || 0,
+                            p99DurationMs: data.p99DurationMs || 0
+                        };
+                    } catch (err) {
+                        console.error('J-Obs: Failed to load stats', err);
+                    }
                 },
 
                 resetFilters() {

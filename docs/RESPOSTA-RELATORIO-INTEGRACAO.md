@@ -46,7 +46,7 @@ Atualizar para v1.0.13 e usar `j-obs-bom` (não `j-obs-parent`):
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.14</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -78,7 +78,7 @@ Usuários estavam importando `j-obs-parent` como BOM, causando conflitos de vers
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.14</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -161,7 +161,7 @@ Falta de ponto-e-vírgula após o objeto `tailwind.config` nos templates HTML, c
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.13</version>
+    <version>1.0.14</version>
 </dependency>
 ```
 
@@ -195,7 +195,7 @@ Se quiser centralizar a versão do J-Obs:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.13</version>
+            <version>1.0.14</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -246,6 +246,35 @@ Agradecemos imensamente o relatório detalhado e profissional. O feedback da equ
 Caso encontrem outros problemas ou tenham sugestões, fiquem à vontade para:
 - Abrir uma issue: https://github.com/JohnPitter/j-obs/issues
 - Participar das discussões: https://github.com/JohnPitter/j-obs/discussions
+
+---
+
+## Nota sobre Warnings de LoggerInterceptor
+
+O relatório menciona warnings frequentes de `LoggerInterceptor` ao acessar endpoints do J-Obs:
+
+```
+WARN LoggerInterceptor - Ação não encontrada no MDC. Não será possível registrar o log
+```
+
+**Esclarecimento:** Este não é um problema do J-Obs, mas sim uma questão de configuração da aplicação. O `LoggerInterceptor` é um componente customizado da aplicação `gacb-srv-activation` que espera contexto MDC específico.
+
+**Solução:** Excluir endpoints do J-Obs do interceptor:
+
+```java
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loggerInterceptor)
+            .addPathPatterns("/**")
+            .excludePathPatterns("/j-obs/**");  // Excluir J-Obs
+    }
+}
+```
+
+Documentação completa disponível em [TROUBLESHOOTING.md - Custom Interceptor Warnings](./TROUBLESHOOTING.md#custom-interceptor-warnings).
 
 ---
 

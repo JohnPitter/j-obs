@@ -387,11 +387,15 @@
                 loading: false,
 
                 async init() {
-                    await Promise.all([
-                        this.loadProblemTypes(),
-                        this.loadStats(),
-                        this.loadIssues()
-                    ]);
+                    try {
+                        await Promise.all([
+                            this.loadProblemTypes(),
+                            this.loadStats(),
+                            this.loadIssues()
+                        ]);
+                    } catch (err) {
+                        console.error('J-Obs: Failed to initialize SQL analyzer', err);
+                    }
                 },
 
                 async analyze() {
@@ -473,10 +477,15 @@
 
                 async clearIssues() {
                     if (confirm('Are you sure you want to clear all detected issues?')) {
-                        await fetch('{{BASE_PATH}}/api/sql/issues', { method: 'DELETE' });
-                        this.issues = [];
-                        this.filteredIssues = [];
-                        await this.loadStats();
+                        try {
+                            const res = await fetch('{{BASE_PATH}}/api/sql/issues', { method: 'DELETE' });
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            this.issues = [];
+                            this.filteredIssues = [];
+                            await this.loadStats();
+                        } catch (err) {
+                            console.error('J-Obs: Failed to clear issues', err);
+                        }
                     }
                 },
 

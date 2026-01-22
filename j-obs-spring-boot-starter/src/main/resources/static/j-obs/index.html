@@ -584,42 +584,57 @@
 
                 loadHealth() {
                     fetch('{{BASE_PATH}}/api/health')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => { this.health = data; })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load health', err));
                 },
 
                 loadTraces() {
                     fetch('{{BASE_PATH}}/api/traces?limit=5')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.traces = { total: data.total, errorCount: data.errorCount || 0 };
                             this.recentTraces = data.traces || [];
                         })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load traces', err));
                 },
 
                 loadLogs() {
                     fetch('{{BASE_PATH}}/api/logs/stats')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.logs = { total: data.totalEntries || 0, errorCount: data.errorCount || 0 };
                         })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load log stats', err));
 
                     fetch('{{BASE_PATH}}/api/logs?level=ERROR&limit=5')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.recentErrors = data.logs || [];
                         })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load recent errors', err));
                 },
 
                 loadMetrics() {
                     fetch('{{BASE_PATH}}/api/metrics/stats')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => { this.metrics = data; })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load metrics', err));
                 },
 
                 loadRequestRate() {
@@ -667,14 +682,17 @@
 
                 loadTopEndpoints() {
                     fetch('{{BASE_PATH}}/api/traces/top-endpoints?limit=5&sortBy=latency')
-                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
                         .then(data => {
                             this.topEndpoints = data.endpoints || [];
                             if (this.topEndpoints.length > 0) {
                                 this.maxEndpointLatency = Math.max(...this.topEndpoints.map(e => e.avgLatencyMs), 100);
                             }
                         })
-                        .catch(() => {});
+                        .catch(err => console.error('J-Obs: Failed to load top endpoints', err));
                 },
 
                 formatTime(timestamp) {
