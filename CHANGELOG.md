@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.13] - 2026-01-21
+
+### Fixed
+- **CRITICAL: JavaScript Error in Dashboard Templates** - Fixed missing semicolon after `tailwind.config` object
+  - Affected pages: traces-list, logs, metrics, health, alerts, layout, login, requirements, index, tools-page-wrapper
+  - Error: `Uncaught TypeError: {(intermediate value)(intermediate value)} is not a function`
+  - Cause: JavaScript interpreted `} (function() {` as trying to call an object as a function
+  - All 10 HTML templates now have correct semicolon placement
+
 ## [1.0.12] - 2026-01-20
 
 ### Fixed

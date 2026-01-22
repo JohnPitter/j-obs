@@ -62,7 +62,7 @@ This guide helps you resolve common issues when integrating J-Obs into your Spri
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.12</version>
+            <version>1.0.13</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -114,7 +114,7 @@ This typically occurs when:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.12</version>
+            <version>1.0.13</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -305,7 +305,7 @@ class MyTest {
 }
 ```
 
-As of v1.0.12+, setting `j-obs.enabled=false` completely disables ALL J-Obs auto-configurations including WebSocket, logs, traces, metrics, alerts, and all other features.
+As of v1.0.13+, setting `j-obs.enabled=false` completely disables ALL J-Obs auto-configurations including WebSocket, logs, traces, metrics, alerts, and all other features.
 
 **Option 2:** Exclude specific J-Obs configurations:
 ```java
@@ -629,4 +629,4 @@ If your issue isn't covered here:
 | `NoSuchMethodError` in Prometheus classes | Use `j-obs-bom` (not `j-obs-parent`) or align Prometheus versions - see [Prometheus version conflicts](#prometheus-version-conflicts) |
 | `GlobalOpenTelemetry.set has already been called` | Use v1.0.9+ or exclude Spring Boot tracing auto-config |
 | `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |
-| J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.12+ where ALL configs respect `j-obs.enabled` |
+| J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.13+ where ALL configs respect `j-obs.enabled` |
