@@ -46,7 +46,7 @@ Atualizar para v1.0.13 e usar `j-obs-bom` (não `j-obs-parent`):
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.14</version>
+            <version>1.0.15</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -78,7 +78,7 @@ Usuários estavam importando `j-obs-parent` como BOM, causando conflitos de vers
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.14</version>
+            <version>1.0.15</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -161,7 +161,7 @@ Falta de ponto-e-vírgula após o objeto `tailwind.config` nos templates HTML, c
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.14</version>
+    <version>1.0.15</version>
 </dependency>
 ```
 
@@ -195,7 +195,7 @@ Se quiser centralizar a versão do J-Obs:
         <dependency>
             <groupId>io.github.johnpitter</groupId>
             <artifactId>j-obs-bom</artifactId>
-            <version>1.0.14</version>
+            <version>1.0.15</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>

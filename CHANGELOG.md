@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.15] - 2026-01-22
+
+### Fixed
+- **WebSocket handler not registered with embedded Tomcat** - Removed `@ConditionalOnServerContainer` from WebSocket configurations. The condition evaluated during Spring's bean definition phase, before the embedded container sets the `ServerContainer` attribute in the `ServletContext`. This caused `NoHandlerFoundException: No endpoint GET /j-obs/ws/logs` and prevented real-time log streaming from working.
+
 ## [1.0.14] - 2026-01-22
 
 ### Fixed
