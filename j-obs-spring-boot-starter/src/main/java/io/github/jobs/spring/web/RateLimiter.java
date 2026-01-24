@@ -6,19 +6,27 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Simple in-memory rate limiter using sliding window algorithm.
  * Thread-safe and suitable for single-instance deployments.
+ * Automatically cleans up stale entries to prevent memory leaks.
  */
 public class RateLimiter {
+
+    private static final int MAX_TRACKED_KEYS = 10_000;
 
     private final int maxRequests;
     private final Duration window;
     private final Map<String, Queue<Instant>> requestLog = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService cleanupExecutor;
 
     /**
      * Creates a rate limiter with the specified limits.
+     * Starts a periodic cleanup task to prevent memory leaks.
      *
      * @param maxRequests maximum requests allowed in the window
      * @param window time window for rate limiting
@@ -26,30 +34,47 @@ public class RateLimiter {
     public RateLimiter(int maxRequests, Duration window) {
         this.maxRequests = maxRequests;
         this.window = window;
+
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "j-obs-ratelimiter-cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        long cleanupIntervalSeconds = Math.max(30, window.toSeconds());
+        this.cleanupExecutor.scheduleAtFixedRate(this::cleanup,
+                cleanupIntervalSeconds, cleanupIntervalSeconds, TimeUnit.SECONDS);
     }
 
     /**
      * Checks if a request from the given key is allowed.
-     * If allowed, records the request.
+     * If allowed, records the request. Uses synchronized access per-key
+     * to prevent race conditions between size check and add.
      *
      * @param key identifier for rate limiting (e.g., IP address, user ID)
      * @return true if request is allowed, false if rate limited
      */
     public boolean tryAcquire(String key) {
+        // Reject if tracking too many keys (DoS protection)
+        if (requestLog.size() >= MAX_TRACKED_KEYS && !requestLog.containsKey(key)) {
+            return false;
+        }
+
         Instant now = Instant.now();
         Instant cutoff = now.minus(window);
 
         Queue<Instant> timestamps = requestLog.computeIfAbsent(key, k -> new ConcurrentLinkedQueue<>());
 
-        // Remove old entries
-        while (!timestamps.isEmpty() && timestamps.peek().isBefore(cutoff)) {
-            timestamps.poll();
-        }
+        synchronized (timestamps) {
+            // Remove old entries
+            while (!timestamps.isEmpty() && timestamps.peek().isBefore(cutoff)) {
+                timestamps.poll();
+            }
 
-        // Check if under limit
-        if (timestamps.size() < maxRequests) {
-            timestamps.add(now);
-            return true;
+            // Check if under limit (atomic with the add)
+            if (timestamps.size() < maxRequests) {
+                timestamps.add(now);
+                return true;
+            }
         }
 
         return false;
@@ -69,12 +94,12 @@ public class RateLimiter {
             return maxRequests;
         }
 
-        // Count valid entries
-        long validCount = timestamps.stream()
-                .filter(t -> !t.isBefore(cutoff))
-                .count();
-
-        return Math.max(0, maxRequests - (int) validCount);
+        synchronized (timestamps) {
+            long validCount = timestamps.stream()
+                    .filter(t -> !t.isBefore(cutoff))
+                    .count();
+            return Math.max(0, maxRequests - (int) validCount);
+        }
     }
 
     /**
@@ -93,14 +118,23 @@ public class RateLimiter {
 
     /**
      * Performs cleanup of stale entries to prevent memory leaks.
-     * Should be called periodically.
+     * Called automatically by the scheduled cleanup task.
      */
     public void cleanup() {
-        Instant cutoff = Instant.now().minus(window.multipliedBy(2));
+        Instant cutoff = Instant.now().minus(window);
         requestLog.entrySet().removeIf(entry -> {
             Queue<Instant> timestamps = entry.getValue();
-            timestamps.removeIf(t -> t.isBefore(cutoff));
-            return timestamps.isEmpty();
+            synchronized (timestamps) {
+                timestamps.removeIf(t -> t.isBefore(cutoff));
+                return timestamps.isEmpty();
+            }
         });
+    }
+
+    /**
+     * Shuts down the cleanup executor. Should be called on application shutdown.
+     */
+    public void shutdown() {
+        cleanupExecutor.shutdownNow();
     }
 }

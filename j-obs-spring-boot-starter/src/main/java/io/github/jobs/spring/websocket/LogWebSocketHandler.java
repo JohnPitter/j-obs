@@ -18,10 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * WebSocket handler for real-time log streaming.
+ * Limits concurrent sessions to prevent DoS attacks.
  */
 public class LogWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(LogWebSocketHandler.class);
+    private static final int MAX_SESSIONS = 50;
 
     private final LogRepository logRepository;
     private final ObjectMapper objectMapper;
@@ -36,6 +38,14 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String sessionId = session.getId();
+
+        // Reject if too many concurrent sessions (DoS protection)
+        if (sessions.size() >= MAX_SESSIONS) {
+            log.warn("WebSocket session limit reached ({}), rejecting connection: {}", MAX_SESSIONS, sessionId);
+            session.close(new CloseStatus(4029, "Too many connections"));
+            return;
+        }
+
         log.debug("WebSocket connection established: {}", sessionId);
 
         SessionContext context = new SessionContext(session);

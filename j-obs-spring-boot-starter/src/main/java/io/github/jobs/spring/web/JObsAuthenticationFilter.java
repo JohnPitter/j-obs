@@ -127,11 +127,8 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
 
             log.info("User '{}' logged in to J-Obs dashboard", username);
 
-            // Redirect to dashboard
-            String redirectUrl = request.getParameter("redirect");
-            if (redirectUrl == null || redirectUrl.isBlank()) {
-                redirectUrl = pathPrefix;
-            }
+            // Redirect to dashboard (validate to prevent open redirect)
+            String redirectUrl = sanitizeRedirectUrl(request.getParameter("redirect"));
             response.sendRedirect(redirectUrl);
             return false;
         }
@@ -301,6 +298,29 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
             result |= aBytes[i] ^ bBytes[i];
         }
         return result == 0;
+    }
+
+    /**
+     * Validates redirect URL to prevent open redirect attacks.
+     * Only allows paths that start with the configured J-Obs path prefix.
+     */
+    private String sanitizeRedirectUrl(String redirectUrl) {
+        if (redirectUrl == null || redirectUrl.isBlank()) {
+            return pathPrefix;
+        }
+        // Block protocol-relative URLs and absolute URLs to external hosts
+        if (redirectUrl.contains("://") || redirectUrl.startsWith("//")) {
+            return pathPrefix;
+        }
+        // Must start with the J-Obs path prefix
+        if (!redirectUrl.startsWith(pathPrefix)) {
+            return pathPrefix;
+        }
+        // Block newline injection (HTTP response splitting)
+        if (redirectUrl.contains("\r") || redirectUrl.contains("\n")) {
+            return pathPrefix;
+        }
+        return redirectUrl;
     }
 
     private boolean handleUnauthenticated(HttpServletRequest request, HttpServletResponse response)

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-01-24
+
+### Security
+- **Fix open redirect vulnerability in login** - `JObsAuthenticationFilter` now validates the `redirect` parameter to only allow paths under the configured J-Obs path prefix. Blocks protocol-relative URLs, absolute URLs to external hosts, and newline injection.
+- **Fix RateLimiter rate limit bypass via X-Forwarded-For spoofing** - `RateLimitInterceptor` no longer reads `X-Forwarded-For` directly. Uses `request.getRemoteAddr()` which respects Spring's `ForwardedHeaderFilter` when properly configured.
+- **Fix reflected XSS in trace-not-found page** - Trace IDs from URL path are now sanitized via `InputSanitizer.sanitizeTraceId()` before template insertion.
+- **Add WebSocket session limit (DoS protection)** - `LogWebSocketHandler` now limits concurrent WebSocket connections to 50. Excess connections are rejected with close code 4029.
+
+### Fixed
+- **RateLimiter race condition** - `tryAcquire()` now uses synchronized access per-key to make the size-check-then-add operation atomic, preventing clients from exceeding the rate limit under concurrent requests.
+- **RateLimiter memory leak** - Added automatic periodic cleanup of stale entries via a daemon thread. Added a max tracked keys limit (10,000) to prevent unbounded growth from distributed attacks.
+- **RateLimiter duplicate instance** - `JObsAutoConfiguration.addInterceptors()` now uses the Spring-managed `RateLimiter` bean instead of creating a separate instance. Added `@PreDestroy` cleanup for the executor thread.
+
 ## [1.0.16] - 2026-01-24
 
 ### Fixed

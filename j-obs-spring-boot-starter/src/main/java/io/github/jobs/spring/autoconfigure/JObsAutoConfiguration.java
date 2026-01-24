@@ -6,6 +6,8 @@ import io.github.jobs.spring.web.JObsApiController;
 import io.github.jobs.spring.web.JObsController;
 import io.github.jobs.spring.web.RateLimiter;
 import io.github.jobs.spring.web.RateLimitInterceptor;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,9 +50,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class JObsAutoConfiguration implements WebMvcConfigurer {
 
     private final JObsProperties properties;
+    private final ObjectProvider<RateLimiter> rateLimiterProvider;
+    private volatile RateLimiter rateLimiterRef;
 
-    public JObsAutoConfiguration(JObsProperties properties) {
+    public JObsAutoConfiguration(JObsProperties properties, ObjectProvider<RateLimiter> rateLimiterProvider) {
         this.properties = properties;
+        this.rateLimiterProvider = rateLimiterProvider;
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (rateLimiterRef != null) {
+            rateLimiterRef.shutdown();
+        }
     }
 
     @Bean
@@ -88,12 +100,12 @@ public class JObsAutoConfiguration implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         if (properties.getRateLimiting().isEnabled()) {
-            RateLimiter rateLimiter = new RateLimiter(
-                    properties.getRateLimiting().getMaxRequests(),
-                    properties.getRateLimiting().getWindow()
-            );
-            registry.addInterceptor(new RateLimitInterceptor(rateLimiter, properties.getPath()))
-                    .addPathPatterns(properties.getPath() + "/api/**");
+            RateLimiter rateLimiter = rateLimiterProvider.getIfAvailable();
+            if (rateLimiter != null) {
+                this.rateLimiterRef = rateLimiter;
+                registry.addInterceptor(new RateLimitInterceptor(rateLimiter, properties.getPath()))
+                        .addPathPatterns(properties.getPath() + "/api/**");
+            }
         }
     }
 

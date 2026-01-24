@@ -90,9 +90,13 @@ public class TraceController {
 
     private String renderNotFound(String traceId) {
         String basePath = properties.getPath();
+        String safeTraceId = InputSanitizer.sanitizeTraceId(traceId);
+        if (safeTraceId == null) {
+            safeTraceId = "(invalid)";
+        }
         return traceNotFoundHtml
                 .replace("{{BASE_PATH}}", basePath)
-                .replace("{{TRACE_ID}}", traceId);
+                .replace("{{TRACE_ID}}", safeTraceId);
     }
 
     private String getDefaultDetailHtml() {

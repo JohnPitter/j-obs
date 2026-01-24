@@ -1,5 +1,6 @@
 package io.github.jobs.spring.web;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,11 @@ class RateLimiterTest {
     @BeforeEach
     void setUp() {
         rateLimiter = new RateLimiter(5, Duration.ofSeconds(1));
+    }
+
+    @AfterEach
+    void tearDown() {
+        rateLimiter.shutdown();
     }
 
     // ==================== tryAcquire ====================
@@ -64,18 +70,22 @@ class RateLimiterTest {
     void tryAcquire_shouldAllowRequestsAfterWindowExpires() throws InterruptedException {
         // Use short window for testing
         RateLimiter shortWindow = new RateLimiter(2, Duration.ofMillis(50));
-        String key = "client-1";
+        try {
+            String key = "client-1";
 
-        // Use up the limit
-        assertThat(shortWindow.tryAcquire(key)).isTrue();
-        assertThat(shortWindow.tryAcquire(key)).isTrue();
-        assertThat(shortWindow.tryAcquire(key)).isFalse();
+            // Use up the limit
+            assertThat(shortWindow.tryAcquire(key)).isTrue();
+            assertThat(shortWindow.tryAcquire(key)).isTrue();
+            assertThat(shortWindow.tryAcquire(key)).isFalse();
 
-        // Wait for window to expire
-        Thread.sleep(60);
+            // Wait for window to expire
+            Thread.sleep(60);
 
-        // Should be allowed again
-        assertThat(shortWindow.tryAcquire(key)).isTrue();
+            // Should be allowed again
+            assertThat(shortWindow.tryAcquire(key)).isTrue();
+        } finally {
+            shortWindow.shutdown();
+        }
     }
 
     // ==================== getRemainingRequests ====================
@@ -156,20 +166,24 @@ class RateLimiterTest {
     @Test
     void cleanup_shouldRemoveStaleEntries() throws InterruptedException {
         RateLimiter shortWindow = new RateLimiter(5, Duration.ofMillis(20));
-        String key = "client-1";
+        try {
+            String key = "client-1";
 
-        // Make some requests
-        shortWindow.tryAcquire(key);
-        shortWindow.tryAcquire(key);
+            // Make some requests
+            shortWindow.tryAcquire(key);
+            shortWindow.tryAcquire(key);
 
-        // Wait for entries to become stale (window * 2)
-        Thread.sleep(50);
+            // Wait for entries to become stale
+            Thread.sleep(50);
 
-        // Cleanup
-        shortWindow.cleanup();
+            // Cleanup
+            shortWindow.cleanup();
 
-        // Key should have full quota again
-        assertThat(shortWindow.getRemainingRequests(key)).isEqualTo(5);
+            // Key should have full quota again
+            assertThat(shortWindow.getRemainingRequests(key)).isEqualTo(5);
+        } finally {
+            shortWindow.shutdown();
+        }
     }
 
     @Test

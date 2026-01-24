@@ -49,14 +49,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     /**
      * Extracts a unique key for the client from the request.
-     * Uses X-Forwarded-For if present (for proxied requests), otherwise remote address.
+     * Uses {@code request.getRemoteAddr()} which respects Spring's
+     * {@code ForwardedHeaderFilter} when {@code server.forward-headers-strategy}
+     * is configured. Does NOT read X-Forwarded-For directly to prevent
+     * rate limit bypass via header spoofing.
      */
     private String getClientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            // Take the first IP in the chain (original client)
-            return forwarded.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 }
