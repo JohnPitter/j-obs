@@ -46,11 +46,15 @@ import java.util.Map;
 public class AlertEventApiController {
 
     private final AlertEventRepository alertEventRepository;
-    private final AlertService alertService;
+    private final AlertService alertService; // nullable when AlertEngine dependencies are missing
 
     public AlertEventApiController(AlertEventRepository alertEventRepository, AlertService alertService) {
         this.alertEventRepository = alertEventRepository;
         this.alertService = alertService;
+    }
+
+    private ResponseEntity<Void> serviceUnavailable() {
+        return ResponseEntity.status(503).build();
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -100,10 +104,13 @@ public class AlertEventApiController {
     }
 
     @PostMapping(value = "/{id}/acknowledge", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AlertEventDto> acknowledgeEvent(
+    public ResponseEntity<?> acknowledgeEvent(
             @PathVariable String id,
             @RequestBody(required = false) AcknowledgeRequest request
     ) {
+        if (alertService == null) {
+            return serviceUnavailable();
+        }
         try {
             String acknowledgedBy = request != null && request.acknowledgedBy() != null
                     ? request.acknowledgedBy()
@@ -118,10 +125,13 @@ public class AlertEventApiController {
     }
 
     @PostMapping(value = "/{id}/resolve", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AlertEventDto> resolveEvent(
+    public ResponseEntity<?> resolveEvent(
             @PathVariable String id,
             @RequestBody(required = false) ResolveRequest request
     ) {
+        if (alertService == null) {
+            return serviceUnavailable();
+        }
         try {
             String resolvedBy = request != null && request.resolvedBy() != null
                     ? request.resolvedBy()
@@ -136,8 +146,11 @@ public class AlertEventApiController {
     }
 
     @GetMapping(value = "/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
-    public AlertService.AlertStatistics getStatistics() {
-        return alertService.getStatistics();
+    public ResponseEntity<?> getStatistics() {
+        if (alertService == null) {
+            return serviceUnavailable();
+        }
+        return ResponseEntity.ok(alertService.getStatistics());
     }
 
     @GetMapping(value = "/statuses", produces = MediaType.APPLICATION_JSON_VALUE)

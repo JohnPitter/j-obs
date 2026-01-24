@@ -146,9 +146,21 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         }
         try {
             String json = objectMapper.writeValueAsString(message);
-            session.sendMessage(new TextMessage(json));
+            synchronized (session) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage(json));
+                }
+            }
         } catch (IOException e) {
             log.warn("Failed to send WebSocket message: {}", e.getMessage());
+        } catch (Throwable t) {
+            // Handles NoSuchMethodError from Tomcat version incompatibility
+            // and other fatal errors during WebSocket send
+            log.error("WebSocket send failed fatally for session {}: {}", session.getId(), t.getMessage());
+            try {
+                session.close(CloseStatus.SERVER_ERROR);
+            } catch (Exception ignored) {
+            }
         }
     }
 

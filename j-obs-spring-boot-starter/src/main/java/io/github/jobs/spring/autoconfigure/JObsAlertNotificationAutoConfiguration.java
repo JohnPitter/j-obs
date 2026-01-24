@@ -228,12 +228,11 @@ public class JObsAlertNotificationAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnBean(AlertService.class)
     public AlertEventApiController alertEventApiController(
             AlertEventRepository alertEventRepository,
-            AlertService alertService
+            org.springframework.beans.factory.ObjectProvider<AlertService> alertServiceProvider
     ) {
-        return new AlertEventApiController(alertEventRepository, alertService);
+        return new AlertEventApiController(alertEventRepository, alertServiceProvider.getIfAvailable());
     }
 
     @Bean

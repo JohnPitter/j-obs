@@ -502,8 +502,9 @@ public class JObsProperties {
 
         /**
          * Maximum requests per window.
+         * Default is 600 (10 req/sec) to support dashboard auto-refresh with multiple widgets.
          */
-        private int maxRequests = 100;
+        private int maxRequests = 600;
 
         /**
          * Time window for rate limiting.

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2026-01-24
+
+### Fixed
+- **AlertEventApiController not registered (400 on /api/alert-events/active)** - Removed strict `@ConditionalOnBean(AlertService.class)` that prevented the controller from loading when `AlertEngine` dependencies (MetricRepository, HealthRepository) were missing. The controller now works independently for read-only operations.
+- **Rate limiter too aggressive for dashboard (429 on /api/metrics/stats)** - Increased default rate limit from 100 to 600 requests/minute per IP. Dashboard with multiple widgets auto-refreshing easily exceeded the previous limit.
+- **WebSocket NoSuchMethodError with Tomcat version mismatch** - `LogWebSocketHandler.sendMessage()` now catches `Throwable` (not just `IOException`) to handle `NoSuchMethodError` from Tomcat version incompatibilities. Added `synchronized` message sending to prevent concurrent send issues from subscription callbacks.
+
 ## [1.0.15] - 2026-01-22
 
 ### Fixed
