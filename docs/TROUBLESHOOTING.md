@@ -10,6 +10,7 @@ This guide helps you resolve common issues when integrating J-Obs into your Spri
 - [Integration Conflicts](#integration-conflicts)
 - [Performance Issues](#performance-issues)
 - [Dashboard Issues](#dashboard-issues)
+- [Log Pollution Issues](#log-pollution-issues)
 
 ---
 
@@ -685,6 +686,94 @@ Then exclude `/internal/**` from your interceptor.
 
 ---
 
+## Log Pollution Issues
+
+### "No endpoint GET /.well-known/appspecific/com.chrome.devtools.json"
+
+**Symptoms:**
+```
+WARN  o.s.w.s.h.NoHandlerFoundException: No endpoint GET /.well-known/appspecific/com.chrome.devtools.json
+```
+
+or in J-Obs logs dashboard, you see repeated 404 requests to this endpoint.
+
+**Cause:** Chrome DevTools automatically requests this endpoint to check for application-specific DevTools configurations. This is a browser feature, not an issue with your application or J-Obs.
+
+**Solutions:**
+
+**Option 1 (Recommended):** Add a silent handler that returns 404 without logging:
+
+```java
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class ChromeDevToolsController {
+
+    /**
+     * Silently handle Chrome DevTools configuration requests.
+     * Chrome automatically requests this endpoint to check for app-specific DevTools config.
+     * We return 404 without logging to prevent log pollution.
+     */
+    @GetMapping("/.well-known/appspecific/com.chrome.devtools.json")
+    public ResponseEntity<Void> chromeDevToolsConfig() {
+        return ResponseEntity.notFound().build();
+    }
+}
+```
+
+**Option 2:** Filter out these requests in your logging configuration:
+
+```xml
+<!-- logback-spring.xml -->
+<configuration>
+    <!-- Filter to exclude Chrome DevTools requests -->
+    <turboFilter class="ch.qos.logback.classic.turbo.MDCFilter">
+        <MDCKey>uri</MDCKey>
+        <Value>/.well-known/appspecific/com.chrome.devtools.json</Value>
+        <OnMatch>DENY</OnMatch>
+    </turboFilter>
+
+    <!-- Or use a more general filter for all .well-known requests -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>message.contains(".well-known/appspecific")</expression>
+            </evaluator>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <!-- encoder config -->
+    </appender>
+</configuration>
+```
+
+**Option 3:** Configure Spring to not throw exceptions for unhandled requests:
+
+```yaml
+# application.yml
+spring:
+  mvc:
+    throw-exception-if-no-handler-found: false
+  web:
+    resources:
+      add-mappings: true
+```
+
+**Option 4:** Configure J-Obs to filter these logs:
+
+```yaml
+j-obs:
+  logs:
+    exclude-patterns:
+      - ".*\\.well-known/appspecific.*"
+      - ".*com\\.chrome\\.devtools.*"
+```
+
+**Note:** This is a browser behavior and not a security concern. The endpoint is requested by Chrome when DevTools is open to check if your application provides custom DevTools configuration.
+
+---
+
 ## Common Error Messages Quick Reference
 
 | Error Message | Solution |
@@ -701,3 +790,4 @@ Then exclude `/internal/**` from your interceptor.
 | `Context does not have an entry for key TracingContext` | Use v1.0.9+ (auto-fixed) or add ObservabilityConfig with NOOP registry |
 | J-Obs configs load despite `j-obs.enabled=false` | Use v1.0.13+ where ALL configs respect `j-obs.enabled` |
 | `Ação não encontrada no MDC` or similar MDC warnings | Exclude `/j-obs/**` from your custom interceptors - see [Custom Interceptor Warnings](#custom-interceptor-warnings) |
+| `No endpoint GET /.well-known/appspecific/com.chrome.devtools.json` | Add silent handler or filter logs - see [Log Pollution Issues](#log-pollution-issues) |
