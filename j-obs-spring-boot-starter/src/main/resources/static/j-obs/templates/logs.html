@@ -137,8 +137,14 @@
             <div class="flex items-center gap-3">
                 <button @click="togglePause()"
                         :class="paused ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'"
-                        class="px-4 py-1.5 text-white text-sm rounded-lg font-medium shadow-lg transition-all">
-                    <span x-text="paused ? '▶ Resume' : '⏸ Pause'"></span>
+                        class="px-4 py-1.5 text-white text-sm rounded-lg font-medium shadow-lg transition-all flex items-center gap-1.5">
+                    <template x-if="paused">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </template>
+                    <template x-if="!paused">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </template>
+                    <span x-text="paused ? 'Resume' : 'Pause'"></span>
                 </button>
                 <button @click="clearLogs()"
                         class="px-4 py-1.5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all">
