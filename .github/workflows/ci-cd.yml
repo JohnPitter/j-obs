@@ -348,7 +348,16 @@ jobs:
 
       - name: Publish to Maven Central
         if: ${{ env.MAVEN_CENTRAL_USERNAME != '' }}
-        run: mvn deploy -Prelease -DskipTests -B -Dcentral.publishing.autoPublish=true
+        run: |
+          mvn deploy -Prelease -DskipTests -B \
+            -Dcentral.publishing.autoPublish=true \
+            -Dcentral.publishing.skipPublishing=false \
+            -X 2>&1 | tee maven-central.log | grep -E "INFO|WARN|ERROR|Upload|Publish|bundle|staging" || true
+          # Show full log if failed
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            cat maven-central.log
+            exit 1
+          fi
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
 
