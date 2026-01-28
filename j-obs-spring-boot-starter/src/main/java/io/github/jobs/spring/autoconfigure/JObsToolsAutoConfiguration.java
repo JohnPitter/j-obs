@@ -4,6 +4,7 @@ import io.github.jobs.application.TraceRepository;
 import io.github.jobs.spring.web.ToolsApiController;
 import io.github.jobs.spring.web.ToolsController;
 import io.github.jobs.spring.web.template.TemplateService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,8 +37,7 @@ public class JObsToolsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnBean(TraceRepository.class)
-    public ToolsApiController toolsApiController(TraceRepository traceRepository) {
-        return new ToolsApiController(traceRepository);
+    public ToolsApiController toolsApiController(ObjectProvider<TraceRepository> traceRepositoryProvider) {
+        return new ToolsApiController(traceRepositoryProvider.getIfAvailable());
     }
 }

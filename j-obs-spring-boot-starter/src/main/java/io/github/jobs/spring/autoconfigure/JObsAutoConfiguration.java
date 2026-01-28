@@ -7,8 +7,8 @@ import io.github.jobs.spring.web.JObsApiController;
 import io.github.jobs.spring.web.JObsController;
 import io.github.jobs.spring.web.RateLimiter;
 import io.github.jobs.spring.web.RateLimitInterceptor;
-import io.github.jobs.spring.websocket.LogWebSocketHandler;
 import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -93,10 +93,8 @@ public class JObsAutoConfiguration implements WebMvcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
-    public CapabilitiesController capabilitiesController(
-            ObjectProvider<LogWebSocketHandler> webSocketHandlerProvider
-    ) {
-        return new CapabilitiesController(webSocketHandlerProvider);
+    public CapabilitiesController capabilitiesController(ListableBeanFactory beanFactory) {
+        return new CapabilitiesController(beanFactory);
     }
 
     @Bean

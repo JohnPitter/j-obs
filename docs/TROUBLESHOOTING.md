@@ -600,6 +600,23 @@ management:
 - J-Obs requires Spring Boot 3.x (Jakarta EE)
 - Spring Boot 2.x (javax namespace) is not supported
 
+### Why Java 11 is NOT Supported
+
+J-Obs requires Java 17 as the minimum version for two fundamental reasons:
+
+1. **Spring Boot 3.x Requirement**: Spring Boot 3.0+ requires Java 17 minimum. This is a hard requirement from the Spring Framework itself due to the migration from `javax.*` to `jakarta.*` namespaces.
+
+2. **Modern Java Features**: J-Obs uses Java 16+ features extensively throughout the codebase:
+   - **Records**: Used in 60+ classes for immutable data objects (DTOs, domain objects, API responses)
+   - **Pattern matching**: Enhanced switch statements and instanceof patterns
+   - **Sealed classes**: Type-safe hierarchies
+
+**If you need Java 11 support**, you would need to:
+- Use Spring Boot 2.x (J-Obs is not compatible)
+- Use an alternative observability solution designed for Java 11
+
+**Recommendation**: Upgrade to Java 17 or 21 LTS. Java 17 has been the LTS version since September 2021 and is well-supported across all major cloud providers and deployment platforms.
+
 ---
 
 ## Getting Help

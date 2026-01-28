@@ -21,7 +21,14 @@ public class ToolsApiController {
     private final TraceRepository traceRepository;
 
     public ToolsApiController(TraceRepository traceRepository) {
-        this.traceRepository = traceRepository;
+        this.traceRepository = traceRepository; // Can be null if tracing is not enabled
+    }
+
+    private List<Trace> getRecentTraces(int limit) {
+        if (traceRepository == null) {
+            return Collections.emptyList();
+        }
+        return traceRepository.recent(limit);
     }
 
     // ==================== Service Map ====================
@@ -37,7 +44,7 @@ public class ToolsApiController {
         nodes.put(selfService, new ServiceNode(selfService, "Application", "application"));
 
         // Analyze traces for dependencies
-        List<Trace> recentTraces = traceRepository.recent(1000);
+        List<Trace> recentTraces = getRecentTraces(1000);
 
         for (Trace trace : recentTraces) {
             for (var span : trace.spans()) {
@@ -352,7 +359,7 @@ public class ToolsApiController {
         List<SqlProblemDto> problems = new ArrayList<>();
 
         // Analyze traces for SQL patterns (limit to recent 1000)
-        traceRepository.recent(1000).forEach(trace -> {
+        getRecentTraces(1000).forEach(trace -> {
             trace.spans().stream()
                     .filter(span -> span.attributes().containsKey("db.statement"))
                     .forEach(span -> {

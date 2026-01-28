@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.22] - 2026-01-28
+
 ### Added
-- **WebSocket graceful degradation** - Application now detects if WebSocket dependencies are available and falls back to REST API polling when unavailable. New `/api/capabilities` endpoint allows frontend to check available features before attempting WebSocket connection, eliminating connection errors when `spring-boot-starter-websocket` is not installed.
+- **Circuit breaker detection** - Added detection for circuit breaker libraries in the dependency checker:
+  - Resilience4j Circuit Breaker (`io.github.resilience4j:resilience4j-circuitbreaker`)
+  - Resilience4j Spring Boot integration (`io.github.resilience4j:resilience4j-spring-boot3`)
+  - Spring Cloud Circuit Breaker (`org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j`)
+  - Netflix Hystrix (deprecated, `com.netflix.hystrix:hystrix-core`)
+- **Java 17 requirement documentation** - Added comprehensive FAQ explaining why Java 11 is not supported (Spring Boot 3.x requires Java 17+, codebase uses Records and other Java 16+ features)
+
+### Fixed
+- **SQL Analyzer button not working** - Fixed `ToolsApiController` not being registered when `TraceRepository` is unavailable. The controller now uses `ObjectProvider<TraceRepository>` to make tracing optional, allowing the SQL analyzer to work even without trace data. Added proper loading states and error messages in the UI.
+- **WebSocket NoClassDefFoundError** - Fixed `CapabilitiesController` causing `NoClassDefFoundError` when `spring-boot-starter-websocket` is not on the classpath. Now uses `ListableBeanFactory.containsBeanDefinition()` to check WebSocket availability by bean name instead of class reference.
 
 ## [1.0.21] - 2026-01-28
 

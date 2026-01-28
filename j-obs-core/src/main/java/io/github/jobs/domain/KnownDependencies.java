@@ -79,6 +79,52 @@ public final class KnownDependencies {
             .documentationUrl("https://logback.qos.ch/documentation.html")
             .build();
 
+    // Circuit Breaker Dependencies (all optional)
+
+    public static final Dependency RESILIENCE4J_CIRCUITBREAKER = Dependency.builder()
+            .className("io.github.resilience4j.circuitbreaker.CircuitBreaker")
+            .displayName("Resilience4j Circuit Breaker")
+            .groupId("io.github.resilience4j")
+            .artifactId("resilience4j-circuitbreaker")
+            .required(false)
+            .description("Lightweight fault tolerance library with circuit breaker pattern")
+            .documentationUrl("https://resilience4j.readme.io/docs/circuitbreaker")
+            .build();
+
+    public static final Dependency RESILIENCE4J_SPRING_BOOT = Dependency.builder()
+            .className("io.github.resilience4j.springboot3.autoconfigure.CircuitBreakerAutoConfiguration")
+            .alternativeClassNames("io.github.resilience4j.springboot2.autoconfigure.CircuitBreakerAutoConfiguration")
+            .displayName("Resilience4j Spring Boot")
+            .groupId("io.github.resilience4j")
+            .artifactId("resilience4j-spring-boot3")
+            .required(false)
+            .description("Resilience4j Spring Boot integration with auto-configuration")
+            .documentationUrl("https://resilience4j.readme.io/docs/getting-started-3")
+            .build();
+
+    public static final Dependency SPRING_CLOUD_CIRCUITBREAKER = Dependency.builder()
+            .className("org.springframework.cloud.client.circuitbreaker.CircuitBreaker")
+            .displayName("Spring Cloud Circuit Breaker")
+            .groupId("org.springframework.cloud")
+            .artifactId("spring-cloud-starter-circuitbreaker-resilience4j")
+            .required(false)
+            .description("Spring Cloud abstraction for circuit breaker implementations")
+            .documentationUrl("https://spring.io/projects/spring-cloud-circuitbreaker")
+            .build();
+
+    /**
+     * Hystrix is deprecated but still used in legacy applications.
+     */
+    public static final Dependency HYSTRIX = Dependency.builder()
+            .className("com.netflix.hystrix.Hystrix")
+            .displayName("Netflix Hystrix (Deprecated)")
+            .groupId("com.netflix.hystrix")
+            .artifactId("hystrix-core")
+            .required(false)
+            .description("Legacy circuit breaker (deprecated, consider migrating to Resilience4j)")
+            .documentationUrl("https://github.com/Netflix/Hystrix")
+            .build();
+
     /**
      * Returns all dependencies that J-Obs checks for.
      * Order matters for display purposes.
@@ -90,7 +136,11 @@ public final class KnownDependencies {
                 MICROMETER_CORE,
                 MICROMETER_PROMETHEUS,
                 SPRING_ACTUATOR,
-                LOGBACK
+                LOGBACK,
+                RESILIENCE4J_CIRCUITBREAKER,
+                RESILIENCE4J_SPRING_BOOT,
+                SPRING_CLOUD_CIRCUITBREAKER,
+                HYSTRIX
         );
     }
 
@@ -110,5 +160,17 @@ public final class KnownDependencies {
         return all().stream()
                 .filter(d -> !d.isRequired())
                 .toList();
+    }
+
+    /**
+     * Returns circuit breaker related dependencies.
+     */
+    public static List<Dependency> circuitBreakers() {
+        return List.of(
+                RESILIENCE4J_CIRCUITBREAKER,
+                RESILIENCE4J_SPRING_BOOT,
+                SPRING_CLOUD_CIRCUITBREAKER,
+                HYSTRIX
+        );
     }
 }

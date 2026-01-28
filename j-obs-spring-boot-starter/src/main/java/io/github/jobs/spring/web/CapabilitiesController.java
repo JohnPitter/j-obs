@@ -1,6 +1,6 @@
 package io.github.jobs.spring.web;
 
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,16 +24,15 @@ public class CapabilitiesController {
     /**
      * Creates the capabilities controller.
      * <p>
-     * Uses ObjectProvider to optionally detect if WebSocket handler is available.
-     * This avoids errors when WebSocket dependencies are not on the classpath.
+     * Checks if WebSocket handler is available by looking up bean names.
+     * This avoids class loading errors when WebSocket dependencies are not on the classpath.
      *
-     * @param webSocketHandlerProvider optional WebSocket handler provider
+     * @param beanFactory the Spring bean factory for looking up beans
      */
-    public CapabilitiesController(
-            ObjectProvider<io.github.jobs.spring.websocket.LogWebSocketHandler> webSocketHandlerProvider
-    ) {
-        // Check if WebSocket handler bean is available
-        this.websocketEnabled = webSocketHandlerProvider.getIfAvailable() != null;
+    public CapabilitiesController(ListableBeanFactory beanFactory) {
+        // Check if WebSocket handler bean is available without directly referencing the class
+        // This avoids NoClassDefFoundError when spring-boot-starter-websocket is not present
+        this.websocketEnabled = beanFactory.containsBeanDefinition("logWebSocketHandler");
     }
 
     /**

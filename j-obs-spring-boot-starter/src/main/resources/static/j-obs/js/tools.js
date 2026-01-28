@@ -219,15 +219,32 @@ function toolsPage() {
         },
 
         // SQL Analyzer Methods
+        sqlAnalyzing: false,
+        sqlError: null,
+
         async analyzeSql() {
+            this.sqlAnalyzing = true;
+            this.sqlError = null;
             try {
                 const response = await fetch('{{BASE_PATH}}/api/tools/sql/analyze', { method: 'POST' });
                 if (response.ok) {
                     const data = await response.json();
                     this.sqlProblems = data.problems || [];
+                    if (this.sqlProblems.length === 0) {
+                        console.info('J-Obs: SQL analysis completed - no issues found');
+                    }
+                } else if (response.status === 404) {
+                    this.sqlError = 'SQL analyzer endpoint not available. Ensure tracing is enabled.';
+                    console.warn('J-Obs: SQL analyzer endpoint not found (404)');
+                } else {
+                    this.sqlError = 'Failed to analyze SQL queries. Status: ' + response.status;
+                    console.error('J-Obs: SQL analysis failed with status:', response.status);
                 }
             } catch (e) {
+                this.sqlError = 'Network error while analyzing SQL queries.';
                 console.error('Failed to analyze SQL:', e);
+            } finally {
+                this.sqlAnalyzing = false;
             }
         }
     }

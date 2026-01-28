@@ -493,12 +493,35 @@
                     <h2 class="text-lg font-semibold text-white">SQL Query Analysis</h2>
                     <span class="badge badge-warning" x-text="sqlProblems.length + ' issues'"></span>
                 </div>
-                <button @click="analyzeSql()" class="btn btn-primary text-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    Analyze Queries
+                <button @click="analyzeSql()"
+                        :disabled="sqlAnalyzing"
+                        class="btn btn-primary text-sm"
+                        :class="sqlAnalyzing ? 'opacity-50 cursor-not-allowed' : ''">
+                    <template x-if="!sqlAnalyzing">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            Analyze Queries
+                        </span>
+                    </template>
+                    <template x-if="sqlAnalyzing">
+                        <span class="flex items-center gap-1.5">
+                            <div class="spinner"></div>
+                            Analyzing...
+                        </span>
+                    </template>
                 </button>
+            </div>
+
+            <!-- Error Message -->
+            <div x-show="sqlError" class="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <div class="flex items-center gap-2 text-red-400">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span x-text="sqlError"></span>
+                </div>
             </div>
 
             <div class="space-y-4">
