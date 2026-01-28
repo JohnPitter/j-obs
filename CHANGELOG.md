@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.20] - 2026-01-28
+
+### Fixed
+- **CI/CD Maven Central publishing** - Fixed `central-publishing-maven-plugin` not uploading to Maven Central. Changed `j-obs-benchmarks` from `<skipPublishing>true</skipPublishing>` to `<excludeArtifacts>` configuration to prevent the benchmarks module from affecting the entire reactor's publishing. Added explicit `<skipPublishing>false</skipPublishing>` in parent pom.xml release profile.
+
 ## [1.0.19] - 2026-01-28
 
 ### Fixed
-- **CI/CD Maven Central publishing** - Fixed `central-publishing-maven-plugin` not uploading to Maven Central by explicitly setting `autoPublish=true` and `skipPublishing=false` flags.
+- **CI/CD Maven Central publishing** - Attempted fix for Maven Central publishing (incomplete - see 1.0.20).
 
 ## [1.0.18] - 2026-01-28
 
