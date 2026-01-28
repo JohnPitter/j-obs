@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-parent</artifactId>
-        <version>1.0.20</version>
+        <version>1.0.21</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -95,16 +95,6 @@
                 <version>3.1.1</version>
                 <configuration>
                     <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.7.0</version>
-                <configuration>
-                    <excludeArtifacts>
-                        <excludeArtifact>j-obs-sample</excludeArtifact>
-                    </excludeArtifacts>
                 </configuration>
             </plugin>
             <!-- Skip GPG signing for sample module -->

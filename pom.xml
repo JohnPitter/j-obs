@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-parent</artifactId>
-    <version>1.0.20</version>
+    <version>1.0.21</version>
     <packaging>pom</packaging>
 
     <name>J-Obs Parent</name>
@@ -239,7 +239,12 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
                             <skipPublishing>false</skipPublishing>
-                            <waitUntil>published</waitUntil>
+                            <waitUntil>uploaded</waitUntil>
+                            <deploymentTimeout>60</deploymentTimeout>
+                            <excludeArtifacts>
+                                <excludeArtifact>j-obs-sample</excludeArtifact>
+                                <excludeArtifact>j-obs-benchmarks</excludeArtifact>
+                            </excludeArtifacts>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.johnpitter</groupId>
         <artifactId>j-obs-parent</artifactId>
-        <version>1.0.20</version>
+        <version>1.0.21</version>
     </parent>
 
     <artifactId>j-obs-benchmarks</artifactId>
@@ -109,17 +109,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Exclude benchmarks from Central Publishing bundle -->
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.7.0</version>
-                <configuration>
-                    <excludeArtifacts>
-                        <excludeArtifact>j-obs-benchmarks</excludeArtifact>
-                    </excludeArtifacts>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>

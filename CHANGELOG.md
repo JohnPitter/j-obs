@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.21] - 2026-01-28
+
+### Fixed
+- **CI/CD Maven Central publishing** - Fixed `central-publishing-maven-plugin` timeout and module exclusion issues:
+  - Moved `excludeArtifacts` configuration for `j-obs-sample` and `j-obs-benchmarks` to parent pom.xml release profile
+  - Changed `waitUntil` from `published` to `uploaded` to avoid timeout waiting for Maven Central processing
+  - Increased `deploymentTimeout` to 60 minutes
+  - Removed redundant plugin configurations from child modules
+
 ## [1.0.20] - 2026-01-28
 
 ### Fixed
-- **CI/CD Maven Central publishing** - Fixed `central-publishing-maven-plugin` not uploading to Maven Central. Changed `j-obs-benchmarks` from `<skipPublishing>true</skipPublishing>` to `<excludeArtifacts>` configuration to prevent the benchmarks module from affecting the entire reactor's publishing. Added explicit `<skipPublishing>false</skipPublishing>` in parent pom.xml release profile.
+- **CI/CD Maven Central publishing** - Artifacts successfully uploaded to Maven Central (deployment ID: ccb84a42-b90d-452c-a728-3dded198311d). Build timed out waiting for "PUBLISHED" state but artifacts should be available after Maven Central processing completes.
 
 ## [1.0.19] - 2026-01-28
 
