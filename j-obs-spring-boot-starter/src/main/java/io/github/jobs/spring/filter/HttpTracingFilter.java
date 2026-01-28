@@ -125,8 +125,10 @@ public class HttpTracingFilter extends OncePerRequestFilter {
                 return timer;
             }
             // Create new timer
-            timer = Timer.builder("http.server.requests")
-                    .description("HTTP server request time")
+            // Use distinct metric name to avoid conflict with Spring Boot's http.server.requests
+            // which has different tag keys (error, exception, method, outcome, status, uri)
+            timer = Timer.builder("jobs.http.requests")
+                    .description("HTTP server request time tracked by J-Obs")
                     .tag("method", method)
                     .tag("uri", uri)
                     .publishPercentiles(0.5, 0.95, 0.99)
@@ -140,8 +142,8 @@ public class HttpTracingFilter extends OncePerRequestFilter {
         if (fallbackTimer == null) {
             synchronized (this) {
                 if (fallbackTimer == null) {
-                    fallbackTimer = Timer.builder("http.server.requests")
-                            .description("HTTP server request time")
+                    fallbackTimer = Timer.builder("jobs.http.requests")
+                            .description("HTTP server request time tracked by J-Obs")
                             .tag("method", "UNKNOWN")
                             .tag("uri", "/other")
                             .publishPercentiles(0.5, 0.95, 0.99)

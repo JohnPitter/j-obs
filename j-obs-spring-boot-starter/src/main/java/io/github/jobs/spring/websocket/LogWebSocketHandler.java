@@ -42,7 +42,7 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         // Reject if too many concurrent sessions (DoS protection)
         if (sessions.size() >= MAX_SESSIONS) {
             log.warn("WebSocket session limit reached ({}), rejecting connection: {}", MAX_SESSIONS, sessionId);
-            session.close(new CloseStatus(4029, "Too many connections"));
+            safeClose(session, new CloseStatus(4029, "Too many connections"));
             return;
         }
 
@@ -124,7 +124,24 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         log.warn("WebSocket transport error for session {}: {}", session.getId(), exception.getMessage());
-        session.close(CloseStatus.SERVER_ERROR);
+        safeClose(session, CloseStatus.SERVER_ERROR);
+    }
+
+    /**
+     * Safely close a WebSocket session, handling Tomcat version compatibility issues.
+     * Some Tomcat versions (pre-10.1.1) may throw NoSuchMethodError when closing sessions
+     * due to missing SocketWrapperBase.getLock() method.
+     */
+    private void safeClose(WebSocketSession session, CloseStatus status) {
+        try {
+            session.close(status);
+        } catch (NoSuchMethodError e) {
+            // Tomcat version compatibility issue - the session will be cleaned up anyway
+            log.debug("WebSocket close failed due to Tomcat compatibility, session will be cleaned up: {}",
+                    session.getId());
+        } catch (Exception e) {
+            log.debug("WebSocket close failed for session {}: {}", session.getId(), e.getMessage());
+        }
     }
 
     private void sendLogEntry(WebSocketSession session, LogEntry entry) {
@@ -167,10 +184,7 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
             // Handles NoSuchMethodError from Tomcat version incompatibility
             // and other fatal errors during WebSocket send
             log.error("WebSocket send failed fatally for session {}: {}", session.getId(), t.getMessage());
-            try {
-                session.close(CloseStatus.SERVER_ERROR);
-            } catch (Exception ignored) {
-            }
+            safeClose(session, CloseStatus.SERVER_ERROR);
         }
     }
 

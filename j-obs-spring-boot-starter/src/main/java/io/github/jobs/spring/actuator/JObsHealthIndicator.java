@@ -46,7 +46,7 @@ public class JObsHealthIndicator implements HealthIndicator {
         try {
             // Check trace repository
             TraceRepository.TraceStats traceStats = traceRepository.stats();
-            double traceUsage = maxTraces > 0 ? (double) traceStats.totalTraces() / maxTraces * 100 : 0;
+            double traceUsage = roundPercent(maxTraces > 0 ? (double) traceStats.totalTraces() / maxTraces * 100 : 0);
             builder.withDetail("traces", new RepositoryStatus(
                     traceStats.totalTraces(),
                     maxTraces,
@@ -55,7 +55,7 @@ public class JObsHealthIndicator implements HealthIndicator {
 
             // Check log repository
             LogRepository.LogStats logStats = logRepository.stats();
-            double logUsage = maxLogs > 0 ? (double) logStats.totalEntries() / maxLogs * 100 : 0;
+            double logUsage = roundPercent(maxLogs > 0 ? (double) logStats.totalEntries() / maxLogs * 100 : 0);
             builder.withDetail("logs", new RepositoryStatus(
                     logStats.totalEntries(),
                     maxLogs,
@@ -68,7 +68,7 @@ public class JObsHealthIndicator implements HealthIndicator {
 
             // Check alert event repository
             long totalAlertEvents = alertEventRepository.count();
-            double alertUsage = maxAlertEvents > 0 ? (double) totalAlertEvents / maxAlertEvents * 100 : 0;
+            double alertUsage = roundPercent(maxAlertEvents > 0 ? (double) totalAlertEvents / maxAlertEvents * 100 : 0);
             builder.withDetail("alertEvents", new RepositoryStatus(
                     totalAlertEvents,
                     maxAlertEvents,
@@ -106,6 +106,14 @@ public class JObsHealthIndicator implements HealthIndicator {
         long logsBytes = logs * 500;
         long alertEventsBytes = alertEvents * 1024;
         return (tracesBytes + logsBytes + alertEventsBytes) / (1024 * 1024);
+    }
+
+    /**
+     * Round percentage to 2 decimal places to avoid floating point precision issues
+     * like 25.230000000000004 being displayed instead of 25.23.
+     */
+    private double roundPercent(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     /**

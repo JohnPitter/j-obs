@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.18] - 2026-01-28
+
+### Fixed
+- **Prometheus meter tag conflict** - Renamed J-Obs HTTP metrics from `http.server.requests` to `jobs.http.requests` to avoid conflict with Spring Boot Actuator's default HTTP metrics which use a different tag set (`[method, uri, status, outcome, exception, error]`).
+- **usagePercent floating point precision** - `JObsHealthIndicator` now rounds percentage values to 2 decimal places, fixing display of values like `25.230000000000004` instead of `25.23`.
+- **WebSocket close compatibility** - Added `safeClose()` helper method in `LogWebSocketHandler` to handle `NoSuchMethodError` from Tomcat version incompatibilities when closing sessions (e.g., during DoS protection rejection).
+
 ## [1.0.17] - 2026-01-24
 
 ### Security
