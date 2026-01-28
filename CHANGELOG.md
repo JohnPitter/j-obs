@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.19] - 2026-01-28
+
+### Fixed
+- **CI/CD Maven Central publishing** - Fixed `central-publishing-maven-plugin` not uploading to Maven Central by explicitly setting `autoPublish=true` and `skipPublishing=false` flags.
+
 ## [1.0.18] - 2026-01-28
 
 ### Fixed
