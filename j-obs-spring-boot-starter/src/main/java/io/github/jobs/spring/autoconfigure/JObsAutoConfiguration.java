@@ -2,10 +2,12 @@ package io.github.jobs.spring.autoconfigure;
 
 import io.github.jobs.application.DependencyChecker;
 import io.github.jobs.infrastructure.ClasspathDependencyChecker;
+import io.github.jobs.spring.web.CapabilitiesController;
 import io.github.jobs.spring.web.JObsApiController;
 import io.github.jobs.spring.web.JObsController;
 import io.github.jobs.spring.web.RateLimiter;
 import io.github.jobs.spring.web.RateLimitInterceptor;
+import io.github.jobs.spring.websocket.LogWebSocketHandler;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -87,6 +89,14 @@ public class JObsAutoConfiguration implements WebMvcConfigurer {
     @ConditionalOnMissingBean
     public JObsApiController jObsApiController(DependencyChecker dependencyChecker) {
         return new JObsApiController(dependencyChecker);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public CapabilitiesController capabilitiesController(
+            ObjectProvider<LogWebSocketHandler> webSocketHandlerProvider
+    ) {
+        return new CapabilitiesController(webSocketHandlerProvider);
     }
 
     @Bean

@@ -183,7 +183,7 @@
             <!-- Connection Status -->
             <div class="ml-auto flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg">
                 <span class="w-2 h-2 rounded-full pulse-dot" :class="connected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'"></span>
-                <span class="text-xs font-medium" :class="connected ? 'text-green-400' : 'text-red-400'" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+                <span class="text-xs font-medium" :class="connected ? 'text-green-400' : 'text-red-400'" x-text="connectionStatus"></span>
             </div>
             </div>
         </div>
@@ -343,6 +343,14 @@
                     traceCount: {{TRACE_COUNT}}
                 },
 
+                // Capabilities detection
+                capabilities: {
+                    websocketEnabled: false,
+                    checked: false
+                },
+                pollingInterval: null,
+                pollingRate: 2000, // Poll every 2 seconds when WebSocket unavailable
+
                 get displayLogs() {
                     return this.viewMode === 'stream' ? this.logs : this.paginatedLogs;
                 },
@@ -355,18 +363,103 @@
                     return Math.max(1, Math.ceil(this.paginatedTotal / this.limit));
                 },
 
+                get connectionStatus() {
+                    if (!this.connected) return 'Disconnected';
+                    if (this.capabilities.websocketEnabled && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        return 'Live';
+                    }
+                    return 'Polling';
+                },
+
                 reconnectAttempts: 0,
-                maxReconnectAttempts: 10,
+                maxReconnectAttempts: 5,
                 baseReconnectDelay: 1000,
 
-                init() {
-                    this.connect();
+                async init() {
+                    // Check capabilities first to determine if WebSocket is available
+                    await this.checkCapabilities();
                     this.loadInitialLogs();
+
+                    if (this.capabilities.websocketEnabled) {
+                        this.connect();
+                    } else {
+                        // WebSocket not available - use REST polling for live updates
+                        console.info('J-Obs: WebSocket not available, using REST API polling');
+                        this.startPolling();
+                    }
+                },
+
+                async checkCapabilities() {
+                    try {
+                        const response = await fetch('{{BASE_PATH}}/api/capabilities');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.capabilities.websocketEnabled = data.websocketEnabled === true;
+                        }
+                    } catch (e) {
+                        // If capabilities endpoint fails, assume WebSocket is not available
+                        console.debug('J-Obs: Could not check capabilities, assuming WebSocket unavailable');
+                        this.capabilities.websocketEnabled = false;
+                    }
+                    this.capabilities.checked = true;
+                },
+
+                startPolling() {
+                    if (this.pollingInterval) return;
+
+                    // Mark as "connected" since we're using polling as fallback
+                    this.connected = true;
+
+                    this.pollingInterval = setInterval(() => {
+                        if (!this.paused && this.viewMode === 'stream') {
+                            this.pollForNewLogs();
+                        }
+                    }, this.pollingRate);
+                },
+
+                stopPolling() {
+                    if (this.pollingInterval) {
+                        clearInterval(this.pollingInterval);
+                        this.pollingInterval = null;
+                    }
+                },
+
+                async pollForNewLogs() {
+                    try {
+                        const params = new URLSearchParams({ limit: 20 });
+                        if (this.filters.level) params.set('level', this.filters.level);
+                        if (this.filters.logger) params.set('logger', this.filters.logger);
+                        if (this.filters.message) params.set('message', this.filters.message);
+
+                        const response = await fetch('{{BASE_PATH}}/api/logs?' + params);
+                        if (!response.ok) return;
+
+                        const data = await response.json();
+                        const newLogs = data.logs || [];
+
+                        // Find new logs that aren't already displayed
+                        const existingIds = new Set(this.logs.map(l => l.id));
+                        const actuallyNew = newLogs.filter(l => !existingIds.has(l.id));
+
+                        // Add new logs at the beginning
+                        for (const log of actuallyNew.reverse()) {
+                            this.addLog(log);
+                        }
+                    } catch (e) {
+                        // Silently ignore polling errors to avoid console spam
+                    }
                 },
 
                 connect() {
+                    if (!this.capabilities.websocketEnabled) {
+                        // Don't attempt WebSocket if not available
+                        return;
+                    }
+
                     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                        console.warn('J-Obs: Max WebSocket reconnection attempts reached');
+                        console.info('J-Obs: WebSocket unavailable, switching to REST polling');
+                        this.capabilities.websocketEnabled = false;
+                        this.startPolling();
                         return;
                     }
 
@@ -376,24 +469,30 @@
                     try {
                         this.ws = new WebSocket(wsUrl);
                     } catch (e) {
-                        console.error('J-Obs: Failed to create WebSocket', e);
-                        this.scheduleReconnect();
+                        // WebSocket creation failed - switch to polling
+                        console.info('J-Obs: WebSocket not supported, using REST polling');
+                        this.capabilities.websocketEnabled = false;
+                        this.startPolling();
                         return;
                     }
 
                     this.ws.onopen = () => {
                         this.connected = true;
                         this.reconnectAttempts = 0;
+                        this.stopPolling(); // Stop polling if it was running
                         this.applyFilters();
                     };
 
-                    this.ws.onclose = () => {
+                    this.ws.onclose = (event) => {
                         this.connected = false;
-                        this.scheduleReconnect();
+                        // Only try to reconnect if it was a normal close or server issue
+                        if (this.capabilities.websocketEnabled) {
+                            this.scheduleReconnect();
+                        }
                     };
 
                     this.ws.onerror = (error) => {
-                        console.error('J-Obs: WebSocket error', error);
+                        // Don't log errors to console - just handle gracefully
                     };
 
                     this.ws.onmessage = (event) => {
@@ -404,19 +503,21 @@
                                 this.addLog(data.data);
                             }
                         } catch (e) {
-                            console.error('J-Obs: Failed to parse WebSocket message', e);
+                            // Silently ignore parse errors
                         }
                     };
                 },
 
                 scheduleReconnect() {
                     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                        console.warn('J-Obs: Max WebSocket reconnection attempts reached');
+                        // Switch to polling after max reconnect attempts
+                        console.info('J-Obs: WebSocket connection failed, switching to REST polling');
+                        this.capabilities.websocketEnabled = false;
+                        this.startPolling();
                         return;
                     }
                     const delay = Math.min(this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
                     this.reconnectAttempts++;
-                    console.log(`J-Obs: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
                     setTimeout(() => this.connect(), delay);
                 },
 
@@ -513,11 +614,13 @@
 
                 togglePause() {
                     this.paused = !this.paused;
+                    // Send pause/resume to WebSocket if connected
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                         this.ws.send(JSON.stringify({
                             type: this.paused ? 'pause' : 'resume'
                         }));
                     }
+                    // Polling automatically respects this.paused flag
                 },
 
                 clearLogs() {
