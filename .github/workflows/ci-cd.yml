@@ -348,7 +348,7 @@ jobs:
 
       - name: Publish to Maven Central
         if: ${{ env.MAVEN_CENTRAL_USERNAME != '' }}
-        run: mvn deploy -Prelease -DskipTests -B
+        run: mvn deploy -Prelease -DskipTests -B -Dcentral.publishing.autoPublish=true
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
 
