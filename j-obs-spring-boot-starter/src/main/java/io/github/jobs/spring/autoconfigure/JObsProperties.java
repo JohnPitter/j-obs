@@ -138,6 +138,12 @@ public class JObsProperties {
      */
     private Observability observability = new Observability();
 
+    /**
+     * OpenAPI/Swagger configuration.
+     * Controls automatic Swagger UI generation for J-Obs APIs.
+     */
+    private OpenApi openApi = new OpenApi();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -280,6 +286,14 @@ public class JObsProperties {
 
     public void setObservability(Observability observability) {
         this.observability = observability;
+    }
+
+    public OpenApi getOpenApi() {
+        return openApi;
+    }
+
+    public void setOpenApi(OpenApi openApi) {
+        this.openApi = openApi;
     }
 
     /**
@@ -2093,6 +2107,89 @@ public class JObsProperties {
 
         public void setMaxDuration(Duration maxDuration) {
             this.maxDuration = maxDuration;
+        }
+    }
+
+    /**
+     * OpenAPI/Swagger UI configuration.
+     * <p>
+     * When Springdoc OpenAPI is on the classpath, J-Obs will automatically configure
+     * Swagger UI with documentation for all J-Obs APIs.
+     * <p>
+     * If the user already has OpenAPI configured, J-Obs will NOT override their settings.
+     * <p>
+     * Example configuration:
+     * <pre>{@code
+     * j-obs:
+     *   openapi:
+     *     enabled: true
+     *     application-group:
+     *       enabled: true  # Creates separate group for application APIs
+     * }</pre>
+     */
+    public static class OpenApi {
+
+        /**
+         * Enable or disable OpenAPI/Swagger UI auto-configuration.
+         * <p>
+         * When enabled and Springdoc OpenAPI is on the classpath:
+         * <ul>
+         *   <li>Swagger UI will be available at /swagger-ui.html</li>
+         *   <li>OpenAPI JSON will be available at /v3/api-docs</li>
+         *   <li>J-Obs APIs will be grouped under "j-obs" group</li>
+         * </ul>
+         * <p>
+         * Default: true
+         */
+        private boolean enabled = true;
+
+        /**
+         * Application API group configuration.
+         */
+        private ApplicationGroup applicationGroup = new ApplicationGroup();
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public ApplicationGroup getApplicationGroup() {
+            return applicationGroup;
+        }
+
+        public void setApplicationGroup(ApplicationGroup applicationGroup) {
+            this.applicationGroup = applicationGroup;
+        }
+
+        /**
+         * Configuration for the application API group.
+         * <p>
+         * When enabled, creates a separate Swagger UI group for application APIs
+         * (excluding J-Obs endpoints).
+         */
+        public static class ApplicationGroup {
+
+            /**
+             * Enable or disable the application API group.
+             * <p>
+             * When enabled, a separate Swagger group named "application" will be created
+             * that excludes all J-Obs endpoints, allowing users to view only their
+             * application APIs.
+             * <p>
+             * Default: true
+             */
+            private boolean enabled = true;
+
+            public boolean isEnabled() {
+                return enabled;
+            }
+
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
         }
     }
 }

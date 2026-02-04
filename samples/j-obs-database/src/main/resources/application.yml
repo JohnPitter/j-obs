@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: j-obs-database
+
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:mem:jobsdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # H2 Console (for debugging)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+server:
+  port: 8087
+
+# J-Obs Configuration
+j-obs:
+  enabled: true
+  path: /j-obs
+  sql-analyzer:
+    enabled: true
+    thresholds:
+      slow-query: 100ms
+      very-slow-query: 1s
+      n-plus-one:
+        min-queries: 3
+        similarity: 0.8
+      large-result-set: 100
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging Configuration
+logging:
+  level:
+    io.github.jobs: DEBUG
+    io.github.jobs.samples: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

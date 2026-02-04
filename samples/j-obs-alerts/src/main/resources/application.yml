@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: j-obs-alerts
+
+server:
+  port: 8083
+
+# J-Obs Configuration with Alerts
+j-obs:
+  enabled: true
+  path: /j-obs
+
+  alerts:
+    enabled: true
+    evaluation-interval: 15s
+    throttling:
+      rate-limit: 10/min
+      cooldown: 5m
+      grouping: true
+      group-wait: 30s
+
+    # Alert Providers Configuration
+    # Uncomment and configure the providers you want to use
+    providers:
+      # Telegram Provider
+      # telegram:
+      #   enabled: true
+      #   bot-token: ${TELEGRAM_BOT_TOKEN:your-bot-token}
+      #   chat-ids:
+      #     - "-1001234567890"
+
+      # Slack Provider
+      # slack:
+      #   enabled: true
+      #   webhook-url: ${SLACK_WEBHOOK_URL:https://hooks.slack.com/services/xxx/yyy/zzz}
+      #   channel: "#alerts"
+
+      # Email Provider
+      # email:
+      #   enabled: true
+      #   to:
+      #     - alerts@example.com
+      #   from: j-obs@example.com
+
+      # Webhook Provider (generic)
+      webhook:
+        enabled: true
+        url: http://localhost:8083/api/webhook-sink
+        headers:
+          Content-Type: application/json
+
+    # Alert Rules
+    rules:
+      - name: error-spike
+        type: log
+        condition:
+          level: ERROR
+          count: "> 5"
+          window: 1m
+        severity: warning
+        providers: [webhook]
+
+      - name: critical-error
+        type: log
+        condition:
+          level: ERROR
+          count: "> 10"
+          window: 1m
+        severity: critical
+        providers: [webhook]
+
+      - name: high-latency
+        type: metric
+        condition:
+          metric: alerts.sample.requests
+          percentile: p99
+          operator: ">"
+          threshold: 2.0
+          duration: 1m
+        severity: warning
+        providers: [webhook]
+
+      - name: service-down
+        type: health
+        condition:
+          component: simulatedService
+          status: DOWN
+          duration: 30s
+        severity: critical
+        providers: [webhook]
+
+# Email Configuration (for email provider)
+spring.mail:
+  host: ${SMTP_HOST:smtp.example.com}
+  port: ${SMTP_PORT:587}
+  username: ${SMTP_USERNAME:}
+  password: ${SMTP_PASSWORD:}
+  properties:
+    mail.smtp.auth: true
+    mail.smtp.starttls.enable: true
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging Configuration
+logging:
+  level:
+    io.github.jobs: DEBUG
+    io.github.jobs.samples: DEBUG

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Samples directory with focused demos** - Created `samples/` directory with 7 focused sample projects:
+  - `j-obs-minimal` (port 8080) - Quickstart with minimal dependencies
+  - `j-obs-webflux` (port 8081) - Reactive/WebFlux application with Mono/Flux
+  - `j-obs-security` (port 8082) - Authentication & authorization (Basic Auth, form login, roles)
+  - `j-obs-alerts` (port 8083) - Alert providers (Telegram, Slack, Email, Webhook) with mock sink
+  - `j-obs-microservices` (ports 8084-8086) - Multi-service architecture for distributed tracing:
+    - API Gateway, Order Service, Inventory Service
+    - Docker Compose for container deployment
+  - `j-obs-database` (port 8087) - SQL Analyzer demo with JPA/JDBC, N+1 detection examples
+  - `j-obs-slo` (port 8088) - SLO/SLI tracking with error budget and burn rate monitoring
+
+- **OpenAPI/Swagger UI integration** - J-Obs now automatically includes Swagger UI when added as a dependency:
+  - Swagger UI available at `/swagger-ui.html` (or `/swagger-ui/index.html`)
+  - OpenAPI 3.0 specification at `/v3/api-docs`
+  - Two API groups created automatically:
+    - `j-obs` - All J-Obs observability endpoints (traces, logs, metrics, health, alerts, etc.)
+    - `application` - User's application endpoints (excluding J-Obs)
+  - Full documentation for all 77 J-Obs API endpoints with descriptions and tags
+  - Security scheme automatically configured when J-Obs authentication is enabled
+  - **No conflicts with existing Swagger**: Uses `@ConditionalOnMissingBean` to respect user's existing OpenAPI configuration
+  - Configurable via `j-obs.openapi.enabled` (default: true) and `j-obs.openapi.application-group.enabled` (default: true)
+
 ## [1.0.22] - 2026-01-28
 
 ### Added

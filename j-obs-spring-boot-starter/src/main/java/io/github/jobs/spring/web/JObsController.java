@@ -24,6 +24,7 @@ public class JObsController {
     private final String dashboardHtml;
     private final String requirementsHtml;
     private final String loginHtml;
+    private final String apiDocsHtml;
 
     public JObsController(DependencyChecker dependencyChecker, JObsProperties properties) {
         this.dependencyChecker = dependencyChecker;
@@ -31,6 +32,7 @@ public class JObsController {
         this.dashboardHtml = loadResource("/static/j-obs/index.html");
         this.requirementsHtml = loadResource("/static/j-obs/requirements.html");
         this.loginHtml = loadResource("/static/j-obs/login.html");
+        this.apiDocsHtml = loadResource("/static/j-obs/templates/api-docs.html");
     }
 
     @GetMapping("${j-obs.path:/j-obs}")
@@ -63,6 +65,16 @@ public class JObsController {
     @ResponseBody
     public String login() {
         return renderLogin();
+    }
+
+    @GetMapping("${j-obs.path:/j-obs}/api-docs")
+    @ResponseBody
+    public String apiDocs() {
+        return renderApiDocs();
+    }
+
+    private String renderApiDocs() {
+        return apiDocsHtml.replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
     }
 
     private String renderLogin() {

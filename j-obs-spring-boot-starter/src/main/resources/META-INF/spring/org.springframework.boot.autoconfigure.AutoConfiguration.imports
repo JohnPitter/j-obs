@@ -20,3 +20,4 @@ io.github.jobs.spring.autoconfigure.JObsAnomalyDetectionAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsServiceMapAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsSloAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsProfilingAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsOpenApiAutoConfiguration

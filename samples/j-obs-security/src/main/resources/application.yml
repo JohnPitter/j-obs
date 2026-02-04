@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: j-obs-security
+
+server:
+  port: 8082
+
+# J-Obs Configuration with Security
+j-obs:
+  enabled: true
+  path: /j-obs
+  security:
+    enabled: true
+    # Note: J-Obs security is automatically integrated with Spring Security
+    # when spring-boot-starter-security is on the classpath
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Logging Configuration
+logging:
+  level:
+    io.github.jobs: DEBUG
+    io.github.jobs.samples: DEBUG
+    org.springframework.security: DEBUG

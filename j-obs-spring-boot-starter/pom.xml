@@ -91,6 +91,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- OpenAPI / Swagger UI (auto-configures Swagger for J-Obs and application APIs) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
         <!-- OTLP Exporter (optional - for Tempo, OTLP collectors) -->
         <dependency>
             <groupId>io.opentelemetry</groupId>

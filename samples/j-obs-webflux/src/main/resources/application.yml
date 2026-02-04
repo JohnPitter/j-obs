@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: j-obs-webflux
+
+server:
+  port: 8081
+
+# J-Obs Configuration
+j-obs:
+  enabled: true
+  path: /j-obs
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging Configuration
+logging:
+  level:
+    io.github.jobs: DEBUG
+    io.github.jobs.samples: DEBUG
+    reactor.netty: INFO

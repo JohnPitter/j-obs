@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: j-obs-slo
+
+server:
+  port: 8088
+
+# J-Obs Configuration with SLOs
+j-obs:
+  enabled: true
+  path: /j-obs
+
+  # SLO Definitions
+  slos:
+    - name: api-availability
+      description: "API should be available 99.9% of the time"
+      sli:
+        type: availability
+        metric: slo.api.requests
+        good: "status < 500"
+        total: "status >= 0"
+      objective: 99.9%
+      window: 30d
+      alerts:
+        burn-rate-1h: 14.4
+        burn-rate-6h: 6
+        budget-remaining: 25%
+
+    - name: api-latency
+      description: "99% of requests should complete in less than 200ms"
+      sli:
+        type: latency
+        metric: slo.api.latency
+        threshold: 0.2  # 200ms
+        percentile: 99
+      objective: 99%
+      window: 30d
+
+    - name: api-latency-p95
+      description: "95% of requests should complete in less than 100ms"
+      sli:
+        type: latency
+        metric: slo.api.latency
+        threshold: 0.1  # 100ms
+        percentile: 95
+      objective: 95%
+      window: 7d
+
+    - name: success-rate
+      description: "99.5% of requests should succeed"
+      sli:
+        type: ratio
+        good:
+          metric: slo.api.requests.success
+        total:
+          metric: slo.api.requests
+      objective: 99.5%
+      window: 7d
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging Configuration
+logging:
+  level:
+    io.github.jobs: DEBUG
+    io.github.jobs.samples: DEBUG

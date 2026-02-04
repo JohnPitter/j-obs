@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVICES_ORDER_URL=http://order-service:8085
+      - SERVICES_INVENTORY_URL=http://inventory-service:8086
+    depends_on:
+      - order-service
+      - inventory-service
+    networks:
+      - j-obs-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - SERVICES_INVENTORY_URL=http://inventory-service:8086
+    depends_on:
+      - inventory-service
+    networks:
+      - j-obs-network
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    networks:
+      - j-obs-network
+
+networks:
+  j-obs-network:
+    driver: bridge

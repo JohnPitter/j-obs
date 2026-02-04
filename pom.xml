@@ -53,6 +53,7 @@
         <module>j-obs-spring-boot-starter</module>
         <module>j-obs-sample</module>
         <module>j-obs-benchmarks</module>
+        <module>samples</module>
     </modules>
 
     <properties>
@@ -244,6 +245,17 @@
                             <excludeArtifacts>
                                 <excludeArtifact>j-obs-sample</excludeArtifact>
                                 <excludeArtifact>j-obs-benchmarks</excludeArtifact>
+                                <excludeArtifact>j-obs-samples</excludeArtifact>
+                                <excludeArtifact>j-obs-minimal</excludeArtifact>
+                                <excludeArtifact>j-obs-webflux</excludeArtifact>
+                                <excludeArtifact>j-obs-security</excludeArtifact>
+                                <excludeArtifact>j-obs-alerts</excludeArtifact>
+                                <excludeArtifact>j-obs-microservices</excludeArtifact>
+                                <excludeArtifact>j-obs-api-gateway</excludeArtifact>
+                                <excludeArtifact>j-obs-order-service</excludeArtifact>
+                                <excludeArtifact>j-obs-inventory-service</excludeArtifact>
+                                <excludeArtifact>j-obs-database</excludeArtifact>
+                                <excludeArtifact>j-obs-slo</excludeArtifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

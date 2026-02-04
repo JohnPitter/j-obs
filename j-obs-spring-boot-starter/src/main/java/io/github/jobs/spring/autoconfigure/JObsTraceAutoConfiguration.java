@@ -14,6 +14,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.slf4j.Logger;
@@ -21,11 +22,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.Ordered;
 
 import java.util.List;
 
@@ -63,6 +67,7 @@ import java.util.List;
  * @see JObsProperties.Traces
  */
 @AutoConfiguration
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)
 public class JObsTraceAutoConfiguration {
@@ -92,20 +97,39 @@ public class JObsTraceAutoConfiguration {
 
     /**
      * Configuration for OpenTelemetry integration.
+     * <p>
+     * This configuration ensures J-Obs span exporter is always registered,
+     * even when other libraries (like Spring Boot Actuator or micrometer-tracing)
+     * are present.
+     * <p>
+     * Key design decisions:
+     * <ul>
+     *   <li>Uses @Primary on key beans to ensure J-Obs takes precedence</li>
+     *   <li>Auto-configuration order set to HIGHEST_PRECEDENCE to run first</li>
+     *   <li>Always registers JObsSpanExporter to capture traces</li>
+     * </ul>
      */
     @ConditionalOnClass(name = "io.opentelemetry.sdk.trace.SdkTracerProvider")
     static class OpenTelemetryConfiguration {
 
+        /**
+         * Creates the J-Obs span exporter.
+         * This bean is always created to ensure trace capture works.
+         */
         @Bean
-        @ConditionalOnMissingBean(name = "jObsSpanExporter")
-        public SpanExporter jObsSpanExporter(TraceRepository traceRepository) {
+        public JObsSpanExporter jObsSpanExporter(TraceRepository traceRepository) {
+            log.info("Creating JObsSpanExporter for trace repository");
             return new JObsSpanExporter(traceRepository);
         }
 
+        /**
+         * Creates the SdkTracerProvider with J-Obs exporter.
+         * Marked as @Primary to ensure this provider is used even if others exist.
+         */
         @Bean
-        @ConditionalOnMissingBean
+        @Primary
         public SdkTracerProvider sdkTracerProvider(
-                SpanExporter jObsSpanExporter,
+                JObsSpanExporter jObsSpanExporter,
                 ObjectProvider<List<SpanExporter>> additionalExporters,
                 @Value("${spring.application.name:j-obs-app}") String serviceName) {
 
@@ -119,7 +143,7 @@ public class JObsTraceAutoConfiguration {
 
             // Always add the J-Obs internal exporter
             builder.addSpanProcessor(SimpleSpanProcessor.create(jObsSpanExporter));
-            log.debug("Added J-Obs span exporter");
+            log.info("Added J-Obs span exporter to SdkTracerProvider");
 
             // Add any additional configured exporters (OTLP, Zipkin, Jaeger)
             List<SpanExporter> exporters = additionalExporters.getIfAvailable();
@@ -136,21 +160,21 @@ public class JObsTraceAutoConfiguration {
             return builder.build();
         }
 
+        /**
+         * Creates the OpenTelemetry instance.
+         * Marked as @Primary to ensure this instance is used.
+         */
         @Bean
-        @ConditionalOnMissingBean
+        @Primary
         public OpenTelemetry openTelemetry(SdkTracerProvider sdkTracerProvider) {
-            // Check if GlobalOpenTelemetry is already initialized (e.g., by Spring Boot Actuator)
+            // Reset GlobalOpenTelemetry if it was previously initialized
+            // This ensures J-Obs's TracerProvider is used
             try {
-                OpenTelemetry existing = GlobalOpenTelemetry.get();
-                // If we get here without exception, it means GlobalOpenTelemetry was already set
-                // Check if it's not the default noop instance
-                if (existing != OpenTelemetry.noop()) {
-                    log.info("Using existing GlobalOpenTelemetry instance (already initialized by another library)");
-                    return existing;
-                }
-            } catch (IllegalStateException e) {
-                // GlobalOpenTelemetry.get() throws if not initialized - this is expected
-                log.debug("GlobalOpenTelemetry not yet initialized, J-Obs will initialize it");
+                GlobalOpenTelemetry.resetForTest();
+                log.debug("Reset GlobalOpenTelemetry for J-Obs initialization");
+            } catch (Exception e) {
+                // resetForTest might not be available in all versions
+                log.debug("Could not reset GlobalOpenTelemetry: {}", e.getMessage());
             }
 
             // Build and register our OpenTelemetry instance
@@ -158,19 +182,30 @@ public class JObsTraceAutoConfiguration {
                 OpenTelemetrySdk sdk = OpenTelemetrySdk.builder()
                         .setTracerProvider(sdkTracerProvider)
                         .buildAndRegisterGlobal();
-                log.info("J-Obs initialized GlobalOpenTelemetry");
+                log.info("J-Obs initialized GlobalOpenTelemetry with JObsSpanExporter");
                 return sdk;
             } catch (IllegalStateException e) {
-                // Race condition: another thread registered GlobalOpenTelemetry between our check and registration
-                log.warn("GlobalOpenTelemetry was registered by another component, using existing instance");
-                return GlobalOpenTelemetry.get();
+                // GlobalOpenTelemetry was already set - get it and log warning
+                log.warn("GlobalOpenTelemetry was already registered by another component. " +
+                        "J-Obs will use its own OpenTelemetry instance for the Tracer bean.");
+                // Return our own SDK without registering it globally
+                // The @Primary annotation ensures our beans are injected
+                return OpenTelemetrySdk.builder()
+                        .setTracerProvider(sdkTracerProvider)
+                        .build();
             }
         }
 
+        /**
+         * Creates the Tracer for J-Obs instrumentation.
+         * Marked as @Primary to ensure this tracer is injected into HttpTracingFilter.
+         */
         @Bean
-        @ConditionalOnMissingBean
+        @Primary
         public Tracer tracer(OpenTelemetry openTelemetry) {
-            return openTelemetry.getTracer("j-obs", "1.0.0");
+            Tracer tracer = openTelemetry.getTracer("j-obs", "1.0.0");
+            log.info("Created J-Obs Tracer from OpenTelemetry instance");
+            return tracer;
         }
     }
 }
