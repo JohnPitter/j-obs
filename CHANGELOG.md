@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.23] - 2026-02-03
+
 ### Added
 - **Samples directory with focused demos** - Created `samples/` directory with 7 focused sample projects:
   - `j-obs-minimal` (port 8080) - Quickstart with minimal dependencies
