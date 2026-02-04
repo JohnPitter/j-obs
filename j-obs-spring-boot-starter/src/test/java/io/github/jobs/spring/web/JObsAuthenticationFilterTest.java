@@ -117,7 +117,11 @@ class JObsAuthenticationFilterTest {
     }
 
     @Test
-    void shouldAuthenticateWithApiKeyQueryParam() throws Exception {
+    void shouldRejectApiKeyQueryParam() throws Exception {
+        // API keys via query parameters are rejected for security reasons:
+        // - Credentials exposed in server logs
+        // - Credentials exposed in browser history
+        // - Credentials leaked via Referer header
         securityConfig.setType("api-key");
         securityConfig.setApiKeys(List.of("my-secret-key"));
 
@@ -128,7 +132,8 @@ class JObsAuthenticationFilterTest {
 
         boolean result = filter.preHandle(request, response, null);
 
-        assertTrue(result);
+        assertFalse(result); // Query param API keys are no longer accepted
+        assertEquals(401, response.getStatus());
     }
 
     @Test

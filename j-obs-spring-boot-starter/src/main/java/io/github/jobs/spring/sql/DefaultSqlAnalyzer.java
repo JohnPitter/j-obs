@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +24,10 @@ import java.util.stream.Collectors;
 public class DefaultSqlAnalyzer implements SqlAnalyzer {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultSqlAnalyzer.class);
+
+    // Pre-compiled patterns to avoid recompilation on each call and potential ReDoS
+    private static final Pattern QUERY_PARAMS_PATTERN = Pattern.compile("\\?.*");
+    private static final Pattern NUMERIC_ID_PATTERN = Pattern.compile("/\\d+");
 
     private final TraceRepository traceRepository;
     private final SqlAnalyzerConfig config;
@@ -113,7 +118,9 @@ public class DefaultSqlAnalyzer implements SqlAnalyzer {
         String url = trace.httpUrl();
         if (method != null && url != null) {
             // Normalize URL by removing query params and IDs
-            String normalizedUrl = url.replaceAll("\\?.*", "").replaceAll("/\\d+", "/{id}");
+            // Using pre-compiled patterns for efficiency and ReDoS prevention
+            String normalizedUrl = QUERY_PARAMS_PATTERN.matcher(url).replaceAll("");
+            normalizedUrl = NUMERIC_ID_PATTERN.matcher(normalizedUrl).replaceAll("/{id}");
             return method + " " + normalizedUrl;
         }
         return trace.name();

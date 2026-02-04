@@ -8,6 +8,7 @@ import ch.qos.logback.core.AppenderBase;
 import io.github.jobs.application.LogRepository;
 import io.github.jobs.domain.log.LogEntry;
 import io.github.jobs.domain.log.LogLevel;
+import io.github.jobs.spring.security.LogSanitizer;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 
@@ -30,6 +31,7 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
 
     private volatile LogRepository logRepository;
     private volatile LogEntryFactory logEntryFactory;
+    private volatile LogSanitizer logSanitizer;
 
     public void setLogRepository(LogRepository logRepository) {
         this.logRepository = logRepository;
@@ -41,6 +43,14 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
 
     public LogEntryFactory getLogEntryFactory() {
         return logEntryFactory;
+    }
+
+    public void setLogSanitizer(LogSanitizer logSanitizer) {
+        this.logSanitizer = logSanitizer;
+    }
+
+    public LogSanitizer getLogSanitizer() {
+        return logSanitizer;
     }
 
     @Override
@@ -73,17 +83,34 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
             }
         }
 
+        // Lazy initialization of sanitizer if not injected
+        LogSanitizer sanitizer = this.logSanitizer;
+        if (sanitizer == null) {
+            synchronized (this) {
+                sanitizer = this.logSanitizer;
+                if (sanitizer == null) {
+                    sanitizer = new LogSanitizer();
+                    this.logSanitizer = sanitizer;
+                }
+            }
+        }
+
+        // Sanitize log message and MDC to mask sensitive data
+        String sanitizedMessage = sanitizer.sanitize(event.getFormattedMessage());
+        String sanitizedStackTrace = sanitizer.sanitizeStackTrace(formatThrowable(event.getThrowableProxy()));
+        Map<String, String> sanitizedMdc = sanitizer.sanitizeMdc(event.getMDCPropertyMap());
+
         // Use factory with pooled builders for better performance
         LogEntry entry = factory.create(
                 Instant.ofEpochMilli(event.getTimeStamp()),
                 convertLevel(event.getLevel()),
                 event.getLoggerName(),
-                event.getFormattedMessage(),
+                sanitizedMessage,
                 event.getThreadName(),
                 extractTraceId(event),
                 extractSpanId(event),
-                formatThrowable(event.getThrowableProxy()),
-                Map.copyOf(event.getMDCPropertyMap())
+                sanitizedStackTrace,
+                sanitizedMdc != null ? Map.copyOf(sanitizedMdc) : Map.of()
         );
 
         repo.add(entry);

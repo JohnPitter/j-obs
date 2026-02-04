@@ -13,8 +13,13 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * WebSocket handler for real-time log streaming.
@@ -24,15 +29,83 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(LogWebSocketHandler.class);
     private static final int MAX_SESSIONS = 50;
+    private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(30);
+    private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(5);
 
     private final LogRepository logRepository;
     private final ObjectMapper objectMapper;
     private final Map<String, SessionContext> sessions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService cleanupExecutor;
 
     public LogWebSocketHandler(LogRepository logRepository) {
         this.logRepository = logRepository;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+
+        // Start periodic cleanup of stale sessions
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "j-obs-websocket-cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        this.cleanupExecutor.scheduleAtFixedRate(
+                this::cleanupStaleSessions,
+                CLEANUP_INTERVAL.toMinutes(),
+                CLEANUP_INTERVAL.toMinutes(),
+                TimeUnit.MINUTES
+        );
+    }
+
+    /**
+     * Shuts down the cleanup executor. Should be called on application shutdown.
+     */
+    public void shutdown() {
+        cleanupExecutor.shutdownNow();
+        // Clean up all remaining sessions
+        sessions.forEach((id, context) -> {
+            if (context.getSubscription() != null) {
+                context.getSubscription().unsubscribe();
+            }
+        });
+        sessions.clear();
+    }
+
+    /**
+     * Cleans up sessions that have been inactive for longer than SESSION_TIMEOUT.
+     * This handles cases where afterConnectionClosed is not called due to errors.
+     */
+    private void cleanupStaleSessions() {
+        Instant cutoff = Instant.now().minus(SESSION_TIMEOUT);
+        int cleanedCount = 0;
+
+        for (Map.Entry<String, SessionContext> entry : sessions.entrySet()) {
+            SessionContext context = entry.getValue();
+
+            boolean isStale = context.getLastActivity().isBefore(cutoff);
+            boolean isClosed = !context.getSession().isOpen();
+
+            if (isStale || isClosed) {
+                String sessionId = entry.getKey();
+                sessions.remove(sessionId);
+
+                if (context.getSubscription() != null) {
+                    context.getSubscription().unsubscribe();
+                }
+
+                if (!isClosed) {
+                    safeClose(context.getSession(), new CloseStatus(4000, "Session timeout"));
+                }
+
+                cleanedCount++;
+                log.debug("Cleaned up stale WebSocket session: {} (inactive for {})",
+                        sessionId, Duration.between(context.getLastActivity(), Instant.now()));
+            }
+        }
+
+        if (cleanedCount > 0) {
+            log.info("Cleaned up {} stale WebSocket session(s), {} active sessions remaining",
+                    cleanedCount, sessions.size());
+        }
     }
 
     @Override
@@ -74,6 +147,9 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         if (context == null) {
             return;
         }
+
+        // Update last activity timestamp
+        context.updateActivity();
 
         try {
             @SuppressWarnings("unchecked")
@@ -198,9 +274,23 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         private String loggerFilter;
         private String messageFilter;
         private volatile boolean paused = false;
+        private volatile Instant lastActivity;
 
         SessionContext(WebSocketSession session) {
             this.session = session;
+            this.lastActivity = Instant.now();
+        }
+
+        void updateActivity() {
+            this.lastActivity = Instant.now();
+        }
+
+        Instant getLastActivity() {
+            return lastActivity;
+        }
+
+        WebSocketSession getSession() {
+            return session;
         }
 
         boolean shouldSend(LogEntry entry) {

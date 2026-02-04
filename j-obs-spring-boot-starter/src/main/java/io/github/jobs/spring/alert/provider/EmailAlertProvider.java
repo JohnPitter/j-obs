@@ -244,10 +244,38 @@ public class EmailAlertProvider extends AbstractAlertProvider {
         if (response == null || response.isEmpty()) {
             throw new IOException("Empty SMTP response for command: " + command);
         }
-        char firstChar = response.charAt(0);
+
+        // Validate SMTP response format: 3 digits followed by space or hyphen
+        // Valid formats: "250 OK", "250-First line" (multi-line), "250"
+        if (response.length() < 3) {
+            throw new IOException("Invalid SMTP response format (too short) for " + command + ": " + response);
+        }
+
+        // Check that first 3 characters are digits
+        String codeStr = response.substring(0, 3);
+        if (!codeStr.matches("\\d{3}")) {
+            throw new IOException("Invalid SMTP response format (no valid code) for " + command + ": " + response);
+        }
+
+        // If there's a 4th character, it must be space, hyphen, or end of string
+        if (response.length() > 3) {
+            char separator = response.charAt(3);
+            if (separator != ' ' && separator != '-') {
+                throw new IOException("Invalid SMTP response format (bad separator) for " + command + ": " + response);
+            }
+        }
+
+        // Parse the response code
+        int code = Integer.parseInt(codeStr);
+
         // 4xx = temporary failure, 5xx = permanent failure
-        if (firstChar == '4' || firstChar == '5') {
-            throw new IOException("SMTP error for " + command + ": " + response);
+        if (code >= 400 && code < 600) {
+            throw new IOException("SMTP error " + code + " for " + command + ": " + response);
+        }
+
+        // 2xx and 3xx are success codes
+        if (code < 200 || code >= 400) {
+            throw new IOException("Unexpected SMTP response code " + code + " for " + command + ": " + response);
         }
     }
 

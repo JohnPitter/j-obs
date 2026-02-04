@@ -14,6 +14,9 @@ public final class InputSanitizer {
     private static final int MAX_THREAD_LENGTH = 128;
     private static final int MAX_GENERIC_LENGTH = 256;
 
+    // Maximum number of wildcards allowed in a search pattern (ReDoS prevention)
+    private static final int MAX_WILDCARDS = 5;
+
     // Patterns for validation
     // Trace IDs can be: OpenTelemetry (32 hex), W3C (hex with dashes), or custom (alphanumeric with dashes/underscores)
     private static final Pattern TRACE_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
@@ -151,15 +154,30 @@ public final class InputSanitizer {
 
     /**
      * Escapes regex special characters for safe use in Pattern.
+     * Limits the number of wildcards to prevent ReDoS attacks.
+     *
+     * @throws IllegalArgumentException if too many wildcards are present
      */
     private static String escapeRegexSpecialChars(String input) {
         if (input == null) {
             return null;
         }
+
+        // Pre-process: collapse consecutive wildcards to prevent ReDoS
+        // "**" or "***" become a single "*"
+        String collapsed = collapseWildcards(input);
+
+        // Count wildcards and reject if too many
+        int wildcardCount = countWildcards(collapsed);
+        if (wildcardCount > MAX_WILDCARDS) {
+            throw new IllegalArgumentException(
+                    "Too many wildcards in search pattern (max " + MAX_WILDCARDS + ", found " + wildcardCount + ")");
+        }
+
         // We want to allow * as wildcard for user-friendly search
         // Convert * to .* for regex matching
         StringBuilder sb = new StringBuilder();
-        for (char c : input.toCharArray()) {
+        for (char c : collapsed.toCharArray()) {
             switch (c) {
                 case '*' -> sb.append(".*");
                 case '.' -> sb.append("\\.");
@@ -172,5 +190,33 @@ public final class InputSanitizer {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Collapses consecutive wildcards into a single wildcard.
+     * This prevents patterns like "a**b" from becoming "a.*.*b" which can cause ReDoS.
+     */
+    private static String collapseWildcards(String input) {
+        if (input == null || !input.contains("*")) {
+            return input;
+        }
+        // Replace 2+ consecutive wildcards with a single one
+        return input.replaceAll("\\*{2,}", "*");
+    }
+
+    /**
+     * Counts the number of wildcard characters in a string.
+     */
+    private static int countWildcards(String input) {
+        if (input == null) {
+            return 0;
+        }
+        int count = 0;
+        for (char c : input.toCharArray()) {
+            if (c == '*') {
+                count++;
+            }
+        }
+        return count;
     }
 }

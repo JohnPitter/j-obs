@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.24] - 2026-02-04
+
+### Security
+- **Password hashing with PBKDF2** - Passwords are now hashed using PBKDF2-HMAC-SHA256 (310,000 iterations per OWASP recommendation). Plaintext passwords still work for backward compatibility but log a warning. Use `PasswordEncoder.encode("password")` to generate hashed passwords.
+- **CSRF protection** - Added CSRF token validation for login forms. Tokens are generated per session and validated on state-changing requests.
+- **Session fixation prevention** - Sessions are now regenerated after successful login to prevent session fixation attacks.
+- **Security headers filter** - Added `SecurityHeadersFilter` that sets protective HTTP headers:
+  - `X-Frame-Options: DENY` - Prevents clickjacking
+  - `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing
+  - `X-XSS-Protection: 1; mode=block` - XSS protection for older browsers
+  - `Content-Security-Policy` - Restricts resource loading
+  - `Strict-Transport-Security` - Enforces HTTPS (only set over HTTPS)
+  - `Referrer-Policy: strict-origin-when-cross-origin` - Controls referrer information
+  - `Permissions-Policy` - Restricts browser features
+- **Improved redirect URL validation** - Replaced string-based validation with proper URI parsing to prevent bypass attempts via URL encoding.
+- **API key query parameter removed** - API keys can no longer be passed via query parameters (`?api_key=xxx`) as this exposes credentials in server logs, browser history, and referrer headers. Use the `X-API-Key` header instead.
+- **Login rate limiting** - Added brute-force protection with configurable limits (default: 5 attempts per 15 minutes). Progressive lockout increases with repeated violations. Lockout status is returned in API responses and UI redirects.
+- **Log sanitization** - Automatic masking of sensitive data in logs including passwords, API keys, tokens, authorization headers, and credit card numbers. Configurable via `LogSanitizer`.
+- **IPv6 SSRF protection** - Fixed URL validator to properly detect IPv4-mapped IPv6 addresses (e.g., `::ffff:127.0.0.1`) that could bypass SSRF protections. Now uses `InetAddress` for accurate IP validation.
+
+### Fixed
+- **WebSocket memory leak** - Added periodic cleanup of stale WebSocket sessions (30-minute timeout, 5-minute cleanup interval). Previously, sessions that disconnected without proper close could accumulate.
+- **SMTP response validation** - Enhanced validation of SMTP responses to properly validate 3-digit code format with correct separators.
+- **ReDoS prevention in SQL Analyzer** - Pre-compiled regex patterns (`Pattern.compile()`) to avoid recompilation on each call and potential ReDoS attacks.
+- **Wildcard abuse in search patterns** - Limited wildcards to maximum of 5 per search pattern and collapsed consecutive wildcards (`**` → `*`) to prevent ReDoS attacks via `InputSanitizer`.
+- **Graceful shutdown for rate limiter** - `LoginRateLimiter` now properly shuts down its cleanup executor thread on application shutdown via `DisposableBean` lifecycle.
+
+### Added
+- **PasswordEncoder utility** - New `io.github.jobs.spring.security.PasswordEncoder` class for secure password hashing and verification.
+- **LoginRateLimiter** - New `io.github.jobs.spring.security.LoginRateLimiter` class for brute-force protection with progressive lockout.
+- **LogSanitizer** - New `io.github.jobs.spring.security.LogSanitizer` class for masking sensitive data in logs.
+- **ConstantTimeUtils** - New `io.github.jobs.spring.security.ConstantTimeUtils` class for timing-attack-safe string comparisons. Uses `MessageDigest.isEqual()` and handles different-length strings securely.
+- **AuditLogger** - New `io.github.jobs.spring.security.AuditLogger` class for structured security audit logging. Logs authentication events, access control decisions, and configuration changes to `j-obs.audit` logger category.
+- **Configurable security limits** - New configuration properties under `j-obs.security.login-rate-limit`:
+  - `max-attempts` - Maximum login attempts before lockout (default: 5)
+  - `window` - Time window for counting attempts (default: 15m)
+  - `base-lockout-duration` - Base lockout duration (default: 15m)
+  - `max-tracked-ips` - Maximum IPs to track (default: 10,000)
+- **Configurable WebSocket limits** - New configuration properties under `j-obs.logs.websocket`:
+  - `max-sessions` - Maximum concurrent WebSocket sessions (default: 50)
+  - `session-timeout` - Timeout for inactive sessions (default: 30m)
+  - `cleanup-interval` - Interval for cleanup of stale sessions (default: 5m)
+- **Configurable input sanitization** - New configuration properties under `j-obs.logs.sanitization`:
+  - `max-wildcards` - Maximum wildcards in search patterns (default: 5)
+  - `max-message-length` - Maximum search pattern length (default: 1000)
+  - `max-logger-length` - Maximum logger name length (default: 256)
+
+### Changed
+- **Improved timing attack protection** - All credential comparisons now use `ConstantTimeUtils` which doesn't leak length information through timing. Previously, early-exit on length mismatch could reveal valid username lengths.
+- **Graceful shutdown for all thread pools** - All Spring beans with background executors now implement `DisposableBean` or `Closeable`:
+  - `RateLimiter` - API rate limiter cleanup
+  - `LoginRateLimiter` - Login rate limiter cleanup
+  - `LogWebSocketHandler` - WebSocket session cleanup
+  - `AlertGrouper` - Alert group timer cleanup
+  - `DefaultProfilingService` - Profiler scheduler cleanup
+  - `SloScheduler` - SLO evaluation scheduler cleanup
+  - `InMemoryTraceRepository` - Trace cleanup executor
+
 ## [1.0.23] - 2026-02-03
 
 ### Added

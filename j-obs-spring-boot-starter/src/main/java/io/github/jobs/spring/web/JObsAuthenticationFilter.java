@@ -1,6 +1,10 @@
 package io.github.jobs.spring.web;
 
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.security.AuditLogger;
+import io.github.jobs.spring.security.ConstantTimeUtils;
+import io.github.jobs.spring.security.LoginRateLimiter;
+import io.github.jobs.spring.security.PasswordEncoder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -8,10 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -20,23 +28,39 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Spring MVC interceptor that handles authentication for J-Obs dashboard endpoints.
  * Supports Basic Authentication and API Key authentication.
+ * <p>
+ * Implements {@link DisposableBean} to ensure proper cleanup of the rate limiter's
+ * background thread on application shutdown.
  */
-public class JObsAuthenticationFilter implements HandlerInterceptor {
+public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(JObsAuthenticationFilter.class);
     private static final String SESSION_ATTR_AUTHENTICATED = "j-obs-authenticated";
     private static final String SESSION_ATTR_USERNAME = "j-obs-username";
+    private static final String SESSION_ATTR_CSRF_TOKEN = "j-obs-csrf-token";
+    private static final String CSRF_HEADER = "X-CSRF-Token";
+    private static final String CSRF_PARAM = "_csrf";
+    private static final int CSRF_TOKEN_LENGTH = 32;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final JObsProperties.Security securityConfig;
     private final String pathPrefix;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final LoginRateLimiter loginRateLimiter;
 
     // Cache for validated API keys (key -> timestamp)
     private final Map<String, Long> validatedApiKeys = new ConcurrentHashMap<>();
 
     public JObsAuthenticationFilter(JObsProperties.Security securityConfig, String pathPrefix) {
+        this(securityConfig, pathPrefix, new LoginRateLimiter());
+    }
+
+    public JObsAuthenticationFilter(JObsProperties.Security securityConfig, String pathPrefix,
+                                     LoginRateLimiter loginRateLimiter) {
         this.securityConfig = securityConfig;
         this.pathPrefix = pathPrefix;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @Override
@@ -107,6 +131,27 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
 
     private boolean handleLoginRequest(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+        String clientIp = getClientIp(request);
+
+        // Check rate limiting BEFORE processing credentials
+        if (!loginRateLimiter.isAllowed(clientIp)) {
+            long lockoutSeconds = loginRateLimiter.getLockoutRemaining(clientIp).toSeconds();
+            log.warn("Login attempt blocked for IP {} - rate limited for {} more seconds", clientIp, lockoutSeconds);
+            AuditLogger.logLoginLocked(clientIp, lockoutSeconds);
+
+            if (isApiRequest(request)) {
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.setContentType("application/json");
+                response.setHeader("Retry-After", String.valueOf(lockoutSeconds));
+                response.getWriter().write(
+                        "{\"error\":\"Too many login attempts\",\"retryAfter\":" + lockoutSeconds + "}"
+                );
+            } else {
+                response.sendRedirect(pathPrefix + "/login?error=locked&retry=" + lockoutSeconds);
+            }
+            return false;
+        }
+
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
@@ -119,33 +164,99 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
             }
         }
 
+        // Validate CSRF token for form submissions
+        if (!validateCsrfToken(request)) {
+            log.warn("CSRF token validation failed for login attempt from {}", clientIp);
+            AuditLogger.logCsrfFailure(clientIp, request.getRequestURI());
+            response.sendRedirect(pathPrefix + "/login?error=csrf");
+            return false;
+        }
+
         if (validateCredentials(username, password)) {
-            HttpSession session = request.getSession(true);
-            session.setAttribute(SESSION_ATTR_AUTHENTICATED, true);
-            session.setAttribute(SESSION_ATTR_USERNAME, username);
-            session.setMaxInactiveInterval((int) securityConfig.getSessionTimeout().toSeconds());
+            // Successful login - clear rate limiting for this IP
+            loginRateLimiter.recordSuccessfulLogin(clientIp);
 
-            log.info("User '{}' logged in to J-Obs dashboard", username);
-
-            // Redirect to dashboard (validate to prevent open redirect)
+            // Session fixation prevention: invalidate old session and create new one
+            HttpSession oldSession = request.getSession(false);
             String redirectUrl = sanitizeRedirectUrl(request.getParameter("redirect"));
+
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
+
+            HttpSession newSession = request.getSession(true);
+            newSession.setAttribute(SESSION_ATTR_AUTHENTICATED, true);
+            newSession.setAttribute(SESSION_ATTR_USERNAME, username);
+            newSession.setMaxInactiveInterval((int) securityConfig.getSessionTimeout().toSeconds());
+
+            // Generate new CSRF token for the authenticated session
+            newSession.setAttribute(SESSION_ATTR_CSRF_TOKEN, generateCsrfToken());
+
+            log.info("User '{}' logged in to J-Obs dashboard from {}", username, clientIp);
+            AuditLogger.logLoginSuccess(username, clientIp);
+
             response.sendRedirect(redirectUrl);
             return false;
         }
 
-        // Login failed - redirect back to login with error
-        log.warn("Failed login attempt for user '{}' from {}", username, request.getRemoteAddr());
-        response.sendRedirect(pathPrefix + "/login?error=true");
+        // Login failed - record for rate limiting
+        loginRateLimiter.recordFailedAttempt(clientIp);
+        int remaining = loginRateLimiter.getRemainingAttempts(clientIp);
+
+        log.warn("Failed login attempt for user '{}' from {} ({} attempts remaining)",
+                username, clientIp, remaining);
+        AuditLogger.logLoginFailure(username, clientIp, remaining);
+
+        if (remaining == 0) {
+            long lockoutSeconds = loginRateLimiter.getLockoutRemaining(clientIp).toSeconds();
+            response.sendRedirect(pathPrefix + "/login?error=locked&retry=" + lockoutSeconds);
+        } else {
+            response.sendRedirect(pathPrefix + "/login?error=true&remaining=" + remaining);
+        }
         return false;
+    }
+
+    /**
+     * Extracts the client IP address, considering proxy headers.
+     */
+    private String getClientIp(HttpServletRequest request) {
+        // Check X-Forwarded-For header first (when behind proxy/load balancer)
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            // Take the first IP (original client)
+            String ip = xForwardedFor.split(",")[0].trim();
+            if (!ip.isBlank()) {
+                return ip;
+            }
+        }
+
+        // Check X-Real-IP header (nginx)
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isBlank()) {
+            return xRealIp;
+        }
+
+        // Fall back to remote address
+        return request.getRemoteAddr();
+    }
+
+    /**
+     * Checks if the request is an API request (vs browser request).
+     */
+    private boolean isApiRequest(HttpServletRequest request) {
+        return request.getRequestURI().contains("/api/") ||
+               "application/json".equals(request.getContentType());
     }
 
     private boolean handleLogoutRequest(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         HttpSession session = request.getSession(false);
+        String clientIp = getClientIp(request);
         if (session != null) {
             String username = (String) session.getAttribute(SESSION_ATTR_USERNAME);
             session.invalidate();
             log.info("User '{}' logged out from J-Obs dashboard", username);
+            AuditLogger.logLogout(username, clientIp);
         }
 
         // For API logout, return 200 OK
@@ -178,12 +289,22 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
         String apiKeyHeader = securityConfig.getApiKeyHeader();
         String apiKey = request.getHeader(apiKeyHeader);
 
+        // Security: API keys in query parameters are no longer supported
+        // They expose credentials in server logs, browser history, and referrer headers
         if (apiKey == null || apiKey.isBlank()) {
-            // Also check query parameter for convenience
-            apiKey = request.getParameter("api_key");
+            String queryApiKey = request.getParameter("api_key");
+            if (queryApiKey != null && !queryApiKey.isBlank()) {
+                log.warn("API key provided via query parameter from {}. " +
+                         "This is insecure and no longer supported. " +
+                         "Use the {} header instead.",
+                         request.getRemoteAddr(), apiKeyHeader);
+                AuditLogger.logApiKeyInsecure(request.getRemoteAddr());
+                return false;
+            }
         }
 
         if (apiKey != null && validateApiKey(apiKey)) {
+            AuditLogger.logApiKeyUsed(apiKey, request.getRemoteAddr());
             return true;
         }
 
@@ -243,7 +364,12 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
         }
 
         for (JObsProperties.Security.User user : users) {
-            if (username.equals(user.getUsername()) && password.equals(user.getPassword())) {
+            // Constant-time username comparison
+            boolean usernameMatches = secureCompare(username, user.getUsername());
+            // Use PasswordEncoder for password verification (supports both hashed and plaintext)
+            boolean passwordMatches = PasswordEncoder.matches(password, user.getPassword());
+
+            if (usernameMatches && passwordMatches) {
                 return true;
             }
         }
@@ -280,47 +406,130 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
 
     /**
      * Constant-time string comparison to prevent timing attacks.
+     * Uses {@link ConstantTimeUtils#secureEquals} which doesn't leak length information.
      */
     private boolean secureCompare(String a, String b) {
-        if (a == null || b == null) {
+        return ConstantTimeUtils.secureEquals(a, b);
+    }
+
+    /**
+     * Generates a cryptographically secure CSRF token.
+     */
+    private String generateCsrfToken() {
+        byte[] tokenBytes = new byte[CSRF_TOKEN_LENGTH];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    /**
+     * Validates CSRF token for state-changing requests.
+     * Token must be present in either header (X-CSRF-Token) or form parameter (_csrf).
+     */
+    private boolean validateCsrfToken(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+
+        // If no session exists yet (first login), generate token for the login page
+        if (session == null) {
+            // First login attempt - CSRF token should have been generated on login page view
+            // For backward compatibility, allow first login without CSRF
+            return true;
+        }
+
+        String expectedToken = (String) session.getAttribute(SESSION_ATTR_CSRF_TOKEN);
+        if (expectedToken == null) {
+            // No token in session yet - likely first login, allow it
+            return true;
+        }
+
+        // Get token from request (header or parameter)
+        String providedToken = request.getHeader(CSRF_HEADER);
+        if (providedToken == null || providedToken.isBlank()) {
+            providedToken = request.getParameter(CSRF_PARAM);
+        }
+
+        if (providedToken == null || providedToken.isBlank()) {
             return false;
         }
 
-        byte[] aBytes = a.getBytes(StandardCharsets.UTF_8);
-        byte[] bBytes = b.getBytes(StandardCharsets.UTF_8);
+        // Constant-time comparison to prevent timing attacks
+        return secureCompare(expectedToken, providedToken);
+    }
 
-        if (aBytes.length != bBytes.length) {
-            return false;
+    /**
+     * Gets the CSRF token for the current session, generating one if needed.
+     * This method is used by the login page to include the token in forms.
+     */
+    public String getOrCreateCsrfToken(HttpServletRequest request) {
+        HttpSession session = request.getSession(true);
+        String token = (String) session.getAttribute(SESSION_ATTR_CSRF_TOKEN);
+        if (token == null) {
+            token = generateCsrfToken();
+            session.setAttribute(SESSION_ATTR_CSRF_TOKEN, token);
         }
-
-        int result = 0;
-        for (int i = 0; i < aBytes.length; i++) {
-            result |= aBytes[i] ^ bBytes[i];
-        }
-        return result == 0;
+        return token;
     }
 
     /**
      * Validates redirect URL to prevent open redirect attacks.
-     * Only allows paths that start with the configured J-Obs path prefix.
+     * Uses URI parsing for secure validation instead of string manipulation.
      */
     private String sanitizeRedirectUrl(String redirectUrl) {
         if (redirectUrl == null || redirectUrl.isBlank()) {
             return pathPrefix;
         }
-        // Block protocol-relative URLs and absolute URLs to external hosts
-        if (redirectUrl.contains("://") || redirectUrl.startsWith("//")) {
+
+        try {
+            // Decode URL to catch encoded bypass attempts like %2f%2f
+            String decodedUrl = java.net.URLDecoder.decode(redirectUrl, StandardCharsets.UTF_8);
+
+            // Parse as URI for proper validation
+            URI uri = new URI(decodedUrl);
+
+            // Block absolute URLs (with scheme or authority)
+            if (uri.isAbsolute() || uri.getAuthority() != null) {
+                log.debug("Blocked redirect to absolute URL: {}", redirectUrl);
+                return pathPrefix;
+            }
+
+            // Get the path component
+            String path = uri.getPath();
+            if (path == null || path.isBlank()) {
+                return pathPrefix;
+            }
+
+            // Block protocol-relative URLs
+            if (path.startsWith("//")) {
+                log.debug("Blocked protocol-relative redirect: {}", redirectUrl);
+                return pathPrefix;
+            }
+
+            // Must start with the J-Obs path prefix
+            if (!path.startsWith(pathPrefix)) {
+                log.debug("Blocked redirect outside J-Obs path: {}", redirectUrl);
+                return pathPrefix;
+            }
+
+            // Block path traversal attempts
+            if (path.contains("..") || path.contains("./")) {
+                log.debug("Blocked path traversal in redirect: {}", redirectUrl);
+                return pathPrefix;
+            }
+
+            // Block newline injection (HTTP response splitting)
+            if (path.contains("\r") || path.contains("\n") ||
+                path.contains("%0d") || path.contains("%0a") ||
+                path.contains("%0D") || path.contains("%0A")) {
+                log.debug("Blocked newline injection in redirect: {}", redirectUrl);
+                return pathPrefix;
+            }
+
+            // Re-encode to ensure safe output
+            return path + (uri.getQuery() != null ? "?" + uri.getQuery() : "");
+
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            log.debug("Invalid redirect URL: {}", redirectUrl, e);
             return pathPrefix;
         }
-        // Must start with the J-Obs path prefix
-        if (!redirectUrl.startsWith(pathPrefix)) {
-            return pathPrefix;
-        }
-        // Block newline injection (HTTP response splitting)
-        if (redirectUrl.contains("\r") || redirectUrl.contains("\n")) {
-            return pathPrefix;
-        }
-        return redirectUrl;
     }
 
     private boolean handleUnauthenticated(HttpServletRequest request, HttpServletResponse response)
@@ -346,5 +555,17 @@ public class JObsAuthenticationFilter implements HandlerInterceptor {
         }
 
         return false;
+    }
+
+    /**
+     * Cleans up resources when the bean is destroyed.
+     * This ensures the rate limiter's cleanup thread is properly shut down.
+     */
+    @Override
+    public void destroy() {
+        log.debug("Shutting down J-Obs authentication filter");
+        if (loginRateLimiter != null) {
+            loginRateLimiter.shutdown();
+        }
     }
 }

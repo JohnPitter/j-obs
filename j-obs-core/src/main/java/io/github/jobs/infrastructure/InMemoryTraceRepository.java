@@ -6,6 +6,7 @@ import io.github.jobs.domain.trace.SpanStatus;
 import io.github.jobs.domain.trace.Trace;
 import io.github.jobs.domain.trace.TraceQuery;
 
+import java.io.Closeable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -19,8 +20,10 @@ import java.util.stream.Collectors;
 /**
  * In-memory implementation of TraceRepository with TTL support.
  * Uses a concurrent map for thread-safe access and periodic cleanup.
+ * <p>
+ * Implements {@link Closeable} for proper resource cleanup.
  */
-public class InMemoryTraceRepository implements TraceRepository {
+public class InMemoryTraceRepository implements TraceRepository, Closeable {
 
     private static final Duration DEFAULT_TTL = Duration.ofHours(1);
     private static final int DEFAULT_MAX_TRACES = 10000;
@@ -246,6 +249,15 @@ public class InMemoryTraceRepository implements TraceRepository {
             cleanupExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        traces.clear();
+    }
+
+    /**
+     * Implements Closeable for resource cleanup.
+     */
+    @Override
+    public void close() {
+        shutdown();
     }
 
     /**

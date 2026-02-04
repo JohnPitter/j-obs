@@ -381,6 +381,11 @@ public class JObsProperties {
          */
         private List<String> exemptPaths = new ArrayList<>(List.of("/static/**"));
 
+        /**
+         * Login rate limiting configuration.
+         */
+        private LoginRateLimit loginRateLimit = new LoginRateLimit();
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -435,6 +440,14 @@ public class JObsProperties {
 
         public void setExemptPaths(List<String> exemptPaths) {
             this.exemptPaths = exemptPaths;
+        }
+
+        public LoginRateLimit getLoginRateLimit() {
+            return loginRateLimit;
+        }
+
+        public void setLoginRateLimit(LoginRateLimit loginRateLimit) {
+            this.loginRateLimit = loginRateLimit;
         }
 
         /**
@@ -500,6 +513,65 @@ public class JObsProperties {
 
             public void setRole(String role) {
                 this.role = role;
+            }
+        }
+
+        /**
+         * Login rate limiting configuration to prevent brute-force attacks.
+         */
+        public static class LoginRateLimit {
+
+            /**
+             * Maximum login attempts before lockout.
+             */
+            private int maxAttempts = 5;
+
+            /**
+             * Time window for counting login attempts.
+             */
+            private Duration window = Duration.ofMinutes(15);
+
+            /**
+             * Base lockout duration after exceeding max attempts.
+             * Increases progressively with repeated violations.
+             */
+            private Duration baseLockoutDuration = Duration.ofMinutes(15);
+
+            /**
+             * Maximum number of IPs to track for rate limiting (DoS protection).
+             */
+            private int maxTrackedIps = 10_000;
+
+            public int getMaxAttempts() {
+                return maxAttempts;
+            }
+
+            public void setMaxAttempts(int maxAttempts) {
+                this.maxAttempts = maxAttempts;
+            }
+
+            public Duration getWindow() {
+                return window;
+            }
+
+            public void setWindow(Duration window) {
+                this.window = window;
+            }
+
+            public Duration getBaseLockoutDuration() {
+                return baseLockoutDuration;
+            }
+
+            public void setBaseLockoutDuration(Duration baseLockoutDuration) {
+                this.baseLockoutDuration = baseLockoutDuration;
+            }
+
+            public int getMaxTrackedIps() {
+                return maxTrackedIps;
+            }
+
+            public void setMaxTrackedIps(int maxTrackedIps) {
+                this.maxTrackedIps = maxTrackedIps;
             }
         }
     }
@@ -831,6 +903,11 @@ public class JObsProperties {
          */
         private WebSocket websocket = new WebSocket();
 
+        /**
+         * Input sanitization settings for search patterns.
+         */
+        private Sanitization sanitization = new Sanitization();
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -863,6 +940,59 @@ public class JObsProperties {
             this.websocket = websocket;
         }
 
+        public Sanitization getSanitization() {
+            return sanitization;
+        }
+
+        public void setSanitization(Sanitization sanitization) {
+            this.sanitization = sanitization;
+        }
+
+        /**
+         * Input sanitization settings for search patterns.
+         */
+        public static class Sanitization {
+
+            /**
+             * Maximum number of wildcards allowed in search patterns (ReDoS protection).
+             */
+            private int maxWildcards = 5;
+
+            /**
+             * Maximum length for log message search patterns.
+             */
+            private int maxMessageLength = 1000;
+
+            /**
+             * Maximum length for logger name patterns.
+             */
+            private int maxLoggerLength = 256;
+
+            public int getMaxWildcards() {
+                return maxWildcards;
+            }
+
+            public void setMaxWildcards(int maxWildcards) {
+                this.maxWildcards = maxWildcards;
+            }
+
+            public int getMaxMessageLength() {
+                return maxMessageLength;
+            }
+
+            public void setMaxMessageLength(int maxMessageLength) {
+                this.maxMessageLength = maxMessageLength;
+            }
+
+            public int getMaxLoggerLength() {
+                return maxLoggerLength;
+            }
+
+            public void setMaxLoggerLength(int maxLoggerLength) {
+                this.maxLoggerLength = maxLoggerLength;
+            }
+        }
+
         /**
          * WebSocket configuration for log streaming.
          */
@@ -883,6 +1013,21 @@ public class JObsProperties {
              * Buffer size in bytes for outgoing messages.
              */
             private int sendBufferSize = 16384;
+
+            /**
+             * Maximum number of concurrent WebSocket sessions (DoS protection).
+             */
+            private int maxSessions = 50;
+
+            /**
+             * Timeout for inactive WebSocket sessions.
+             */
+            private Duration sessionTimeout = Duration.ofMinutes(30);
+
+            /**
+             * Interval for cleaning up stale WebSocket sessions.
+             */
+            private Duration cleanupInterval = Duration.ofMinutes(5);
 
             public boolean isCompressionEnabled() {
                 return compressionEnabled;
@@ -906,6 +1051,30 @@ public class JObsProperties {
 
             public void setSendBufferSize(int sendBufferSize) {
                 this.sendBufferSize = sendBufferSize;
+            }
+
+            public int getMaxSessions() {
+                return maxSessions;
+            }
+
+            public void setMaxSessions(int maxSessions) {
+                this.maxSessions = maxSessions;
+            }
+
+            public Duration getSessionTimeout() {
+                return sessionTimeout;
+            }
+
+            public void setSessionTimeout(Duration sessionTimeout) {
+                this.sessionTimeout = sessionTimeout;
+            }
+
+            public Duration getCleanupInterval() {
+                return cleanupInterval;
+            }
+
+            public void setCleanupInterval(Duration cleanupInterval) {
+                this.cleanupInterval = cleanupInterval;
             }
         }
     }

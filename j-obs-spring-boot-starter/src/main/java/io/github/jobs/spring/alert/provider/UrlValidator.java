@@ -174,26 +174,91 @@ public final class UrlValidator {
         return false;
     }
 
+    /**
+     * Checks if a host string represents an IP address (IPv4 or IPv6).
+     * Uses InetAddress for accurate detection instead of regex.
+     */
     private static boolean isIpAddress(String host) {
-        // Simple check for IPv4 or IPv6
-        return host.matches("^[0-9.:]+$") || host.contains(":");
+        if (host == null || host.isEmpty()) {
+            return false;
+        }
+        try {
+            // InetAddress.getByName() will parse the IP without DNS lookup
+            // for valid IP address formats
+            InetAddress addr = InetAddress.getByName(host);
+            // Verify it's actually an IP by checking if the string representation matches
+            return addr.getHostAddress().equalsIgnoreCase(host) ||
+                   // Handle IPv6 formats that may differ in representation
+                   isNumericIpFormat(host);
+        } catch (UnknownHostException e) {
+            // If it can't be parsed, check if it looks like an IP
+            return isNumericIpFormat(host);
+        }
+    }
+
+    /**
+     * Checks if the string looks like a numeric IP format.
+     */
+    private static boolean isNumericIpFormat(String host) {
+        // IPv4: digits and dots only
+        if (host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$")) {
+            return true;
+        }
+        // IPv6: contains colon (simplified check)
+        if (host.contains(":")) {
+            // Valid IPv6 chars: hex digits, colons, and dots (for IPv4-mapped)
+            return host.matches("^[0-9a-fA-F:.]+$");
+        }
+        return false;
     }
 
     private static boolean isPrivateOrReservedIp(String ip) {
         if (BLOCKED_HOSTS.contains(ip)) {
             return true;
         }
-        if (PRIVATE_IPV4_PATTERN.matcher(ip).matches()) {
-            return true;
+
+        // Use InetAddress for proper IP parsing and checking
+        try {
+            InetAddress addr = InetAddress.getByName(ip);
+
+            // Check using InetAddress built-in methods
+            if (isPrivateOrLoopback(addr)) {
+                return true;
+            }
+
+            // Additional check for IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
+            // These can bypass string-based checks
+            if (addr instanceof java.net.Inet6Address) {
+                java.net.Inet6Address ipv6 = (java.net.Inet6Address) addr;
+                // Check if it's an IPv4-mapped or IPv4-compatible address
+                if (ipv6.isIPv4CompatibleAddress()) {
+                    // Extract the IPv4 part and check it
+                    byte[] bytes = ipv6.getAddress();
+                    // IPv4 part is in the last 4 bytes
+                    String ipv4 = String.format("%d.%d.%d.%d",
+                            bytes[12] & 0xFF, bytes[13] & 0xFF,
+                            bytes[14] & 0xFF, bytes[15] & 0xFF);
+                    return isPrivateOrReservedIp(ipv4);
+                }
+            }
+
+            return false;
+        } catch (UnknownHostException e) {
+            // Fall back to pattern matching for unparseable addresses
+            if (PRIVATE_IPV4_PATTERN.matcher(ip).matches()) {
+                return true;
+            }
+            if (LINK_LOCAL_PATTERN.matcher(ip).matches()) {
+                return true;
+            }
+            // Check for IPv6 private ranges
+            String lowerIp = ip.toLowerCase();
+            if (lowerIp.startsWith("fc") || lowerIp.startsWith("fd") ||
+                lowerIp.startsWith("fe80:") || lowerIp.startsWith("::ffff:")) {
+                return true;
+            }
+            return false;
         }
-        if (LINK_LOCAL_PATTERN.matcher(ip).matches()) {
-            return true;
-        }
-        // Check for IPv6 private ranges
-        if (ip.startsWith("fc") || ip.startsWith("fd") || ip.startsWith("fe80:")) {
-            return true;
-        }
-        return false;
     }
 
     private static boolean isPrivateOrLoopback(InetAddress addr) {

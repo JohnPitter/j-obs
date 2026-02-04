@@ -8,6 +8,7 @@ import io.github.jobs.domain.alert.AlertNotificationResult;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -58,7 +59,7 @@ import java.util.function.Consumer;
  * @see AlertGroupKey
  * @see AlertDispatcher
  */
-public class AlertGrouper {
+public class AlertGrouper implements DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(AlertGrouper.class);
 
@@ -383,5 +384,32 @@ public class AlertGrouper {
         }
         long hours = minutes / 60;
         return hours + "h " + (minutes % 60) + "m";
+    }
+
+    /**
+     * Shuts down the grouper, cancelling all pending timers and clearing groups.
+     * Note: This does not shut down the scheduler as it's owned externally.
+     */
+    public void shutdown() {
+        lock.writeLock().lock();
+        try {
+            log.debug("Shutting down alert grouper with {} pending groups", pendingGroups.size());
+            // Cancel all pending timers
+            groupTimers.values().forEach(future -> future.cancel(false));
+            groupTimers.clear();
+            pendingGroups.clear();
+            groupListeners.clear();
+            log.debug("Alert grouper shutdown complete");
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Called by Spring when the bean is destroyed.
+     */
+    @Override
+    public void destroy() {
+        shutdown();
     }
 }

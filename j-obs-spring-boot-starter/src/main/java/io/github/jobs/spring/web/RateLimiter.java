@@ -1,5 +1,9 @@
 package io.github.jobs.spring.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -14,8 +18,12 @@ import java.util.concurrent.TimeUnit;
  * Simple in-memory rate limiter using sliding window algorithm.
  * Thread-safe and suitable for single-instance deployments.
  * Automatically cleans up stale entries to prevent memory leaks.
+ * <p>
+ * Implements {@link DisposableBean} for proper cleanup on Spring shutdown.
  */
-public class RateLimiter {
+public class RateLimiter implements DisposableBean {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimiter.class);
 
     private static final int MAX_TRACKED_KEYS = 10_000;
 
@@ -132,9 +140,31 @@ public class RateLimiter {
     }
 
     /**
-     * Shuts down the cleanup executor. Should be called on application shutdown.
+     * Shuts down the cleanup executor gracefully.
+     * Waits up to 5 seconds for pending tasks to complete.
      */
     public void shutdown() {
-        cleanupExecutor.shutdownNow();
+        log.debug("Shutting down rate limiter cleanup executor");
+        cleanupExecutor.shutdown();
+        try {
+            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                log.debug("Cleanup executor did not terminate in time, forcing shutdown");
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.debug("Interrupted while waiting for cleanup executor shutdown");
+            cleanupExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        requestLog.clear();
+        log.debug("Rate limiter shutdown complete");
+    }
+
+    /**
+     * Called by Spring when the bean is destroyed.
+     */
+    @Override
+    public void destroy() {
+        shutdown();
     }
 }

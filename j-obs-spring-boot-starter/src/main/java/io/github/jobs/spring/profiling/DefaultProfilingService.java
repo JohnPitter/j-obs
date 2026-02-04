@@ -5,6 +5,7 @@ import io.github.jobs.domain.profiling.*;
 import io.github.jobs.infrastructure.InMemoryProfilingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.lang.management.*;
 import java.time.Duration;
@@ -16,8 +17,10 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Default implementation of ProfilingService.
  * Uses JVM management APIs for profiling.
+ * <p>
+ * Implements {@link DisposableBean} for proper cleanup on Spring shutdown.
  */
-public class DefaultProfilingService implements ProfilingService {
+public class DefaultProfilingService implements ProfilingService, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultProfilingService.class);
 
@@ -314,6 +317,14 @@ public class DefaultProfilingService implements ProfilingService {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * Called by Spring when the bean is destroyed.
+     */
+    @Override
+    public void destroy() {
+        shutdown();
     }
 
     /**

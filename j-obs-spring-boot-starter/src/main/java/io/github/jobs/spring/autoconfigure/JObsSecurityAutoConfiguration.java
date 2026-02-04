@@ -1,5 +1,6 @@
 package io.github.jobs.spring.autoconfigure;
 
+import io.github.jobs.spring.security.SecurityHeadersFilter;
 import io.github.jobs.spring.web.JObsAuthenticationFilter;
 import io.github.jobs.spring.webflux.ReactiveAuthenticationFilter;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -52,6 +54,18 @@ public class JObsSecurityAutoConfiguration {
                     properties.getSecurity(),
                     properties.getPath()
             );
+        }
+
+        @Bean
+        @ConditionalOnMissingBean(name = "jObsSecurityHeadersFilter")
+        public FilterRegistrationBean<SecurityHeadersFilter> jObsSecurityHeadersFilter() {
+            FilterRegistrationBean<SecurityHeadersFilter> registration = new FilterRegistrationBean<>();
+            registration.setFilter(new SecurityHeadersFilter());
+            registration.addUrlPatterns(properties.getPath() + "/*");
+            registration.setName("jObsSecurityHeadersFilter");
+            registration.setOrder(1); // Run early in the filter chain
+            log.debug("Registered security headers filter for path: {}", properties.getPath());
+            return registration;
         }
 
         @Override

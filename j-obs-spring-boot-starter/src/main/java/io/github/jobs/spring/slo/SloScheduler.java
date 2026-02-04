@@ -5,6 +5,7 @@ import io.github.jobs.domain.slo.SloEvaluation;
 import io.github.jobs.domain.slo.SloStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.time.Duration;
 import java.util.List;
@@ -14,8 +15,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Scheduler for periodic SLO evaluation.
+ * <p>
+ * Implements {@link DisposableBean} for proper cleanup on Spring shutdown.
  */
-public class SloScheduler {
+public class SloScheduler implements DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(SloScheduler.class);
 
@@ -101,5 +104,13 @@ public class SloScheduler {
      */
     public boolean isRunning() {
         return running;
+    }
+
+    /**
+     * Called by Spring when the bean is destroyed.
+     */
+    @Override
+    public void destroy() {
+        stop();
     }
 }
