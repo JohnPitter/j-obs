@@ -32,8 +32,7 @@ jobs:
           cache: maven
 
       - name: Build with Maven (exclude samples)
-        run: mvn clean compile -DskipTests -B -pl '!samples,!j-obs-sample'
-
+        run: mvn clean compile -DskipTests -B 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -62,8 +61,7 @@ jobs:
           cache: maven
 
       - name: Run tests (exclude samples)
-        run: mvn test -B -pl '!samples,!j-obs-sample'
-
+        run: mvn test -B 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -121,7 +119,7 @@ jobs:
 
       - name: Run tests with Spring Boot ${{ matrix.spring-boot }}
         run: |
-          mvn test -B -pl '!samples,!j-obs-sample' \
+          mvn test -B \
             -Dspring-boot.version=${{ matrix.spring-boot }} \
             -Dmicrometer.version=$(case ${{ matrix.spring-boot }} in \
               3.2.*) echo "1.12.0";; \
@@ -159,8 +157,7 @@ jobs:
           cache: maven
 
       - name: Package with Maven (exclude samples)
-        run: mvn package -DskipTests -B -pl '!samples,!j-obs-sample'
-
+        run: mvn package -DskipTests -B 
       - name: Upload JAR artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -206,8 +203,7 @@ jobs:
         run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }} -DgenerateBackupPoms=false -B
 
       - name: Package release artifacts (exclude samples)
-        run: mvn package -DskipTests -B -pl '!samples,!j-obs-sample'
-
+        run: mvn package -DskipTests -B 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -271,7 +267,7 @@ jobs:
         run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }} -DgenerateBackupPoms=false -B
 
       - name: Publish to GitHub Packages (exclude samples)
-        run: mvn deploy -DskipTests -B -pl '!samples,!j-obs-sample,!j-obs-benchmarks' || true
+        run: mvn deploy -DskipTests -B -pl '!j-obs-benchmarks' || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -347,7 +343,7 @@ jobs:
         if: ${{ env.MAVEN_CENTRAL_USERNAME != '' }}
         run: |
           mvn deploy -Prelease -DskipTests -B \
-            -pl '!samples,!j-obs-sample,!j-obs-benchmarks' \
+            -pl '!j-obs-benchmarks' \
             -Dcentral.publishing.autoPublish=true \
             -Dcentral.publishing.skipPublishing=false \
             -X 2>&1 | tee maven-central.log | grep -E "INFO|WARN|ERROR|Upload|Publish|bundle|staging" || true

@@ -51,10 +51,18 @@
         <module>j-obs-bom</module>
         <module>j-obs-core</module>
         <module>j-obs-spring-boot-starter</module>
-        <module>j-obs-sample</module>
         <module>j-obs-benchmarks</module>
-        <module>samples</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>samples</id>
+            <modules>
+                <module>j-obs-sample</module>
+                <module>samples</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <java.version>17</java.version>
