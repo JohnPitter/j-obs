@@ -128,6 +128,11 @@ public class JObsProperties {
     private Slo slo = new Slo();
 
     /**
+     * Persistence configuration.
+     */
+    private Persistence persistence = new Persistence();
+
+    /**
      * Profiling configuration.
      */
     private Profiling profiling = new Profiling();
@@ -270,6 +275,14 @@ public class JObsProperties {
 
     public void setSlo(Slo slo) {
         this.slo = slo;
+    }
+
+    public Persistence getPersistence() {
+        return persistence;
+    }
+
+    public void setPersistence(Persistence persistence) {
+        this.persistence = persistence;
     }
 
     public Profiling getProfiling() {
@@ -475,7 +488,7 @@ public class JObsProperties {
 
             private String username;
             private String password;
-            private String role = "USER";
+            private String role = "ADMIN";
 
             public User() {
             }
@@ -2359,6 +2372,38 @@ public class JObsProperties {
             public void setEnabled(boolean enabled) {
                 this.enabled = enabled;
             }
+        }
+    }
+
+    /**
+     * JDBC persistence configuration.
+     * <p>
+     * When enabled and a DataSource is available, J-Obs will use JDBC-backed repositories
+     * instead of in-memory repositories. This allows traces, alerts, and SLO data to survive
+     * application restarts.
+     * <p>
+     * Configuration:
+     * <pre>{@code
+     * j-obs:
+     *   persistence:
+     *     enabled: true
+     * }</pre>
+     */
+    public static class Persistence {
+
+        /**
+         * Enable JDBC persistence for J-Obs data.
+         * Requires spring-boot-starter-jdbc and a DataSource on the classpath.
+         * Default: false (uses in-memory repositories).
+         */
+        private boolean enabled = false;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 }

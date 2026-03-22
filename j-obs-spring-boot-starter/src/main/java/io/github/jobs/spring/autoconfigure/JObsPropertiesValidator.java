@@ -12,6 +12,8 @@ import io.github.jobs.spring.autoconfigure.JObsProperties.Dashboard;
 import io.github.jobs.spring.autoconfigure.JObsProperties.Health;
 import io.github.jobs.spring.autoconfigure.JObsProperties.Logs;
 import io.github.jobs.spring.autoconfigure.JObsProperties.Metrics;
+import io.github.jobs.spring.autoconfigure.JObsProperties.RateLimiting;
+import io.github.jobs.spring.autoconfigure.JObsProperties.Security;
 import io.github.jobs.spring.autoconfigure.JObsProperties.Traces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,12 +53,16 @@ public class JObsPropertiesValidator {
 
     /**
      * Validates all properties and returns a list of validation errors.
+     * Throws IllegalStateException for fatal misconfigurations to fail fast on startup.
      */
     public List<String> validate() {
         List<String> errors = new ArrayList<>();
+        List<String> fatalErrors = new ArrayList<>();
 
         validatePath(errors);
         validateCheckInterval(errors);
+        validateSecurity(errors, fatalErrors);
+        validateRateLimiting(errors, fatalErrors);
         validateDashboard(errors);
         validateTraces(errors);
         validateLogs(errors);
@@ -71,7 +77,70 @@ public class JObsPropertiesValidator {
             }
         }
 
+        if (!fatalErrors.isEmpty()) {
+            String message = "J-Obs configuration is invalid and cannot start:\n" +
+                    String.join("\n", fatalErrors.stream().map(e -> "  - " + e).toList());
+            log.error(message);
+            throw new IllegalStateException(message);
+        }
+
+        // Warn if security is disabled
+        if (!properties.getSecurity().isEnabled()) {
+            log.warn("J-Obs dashboard is accessible without authentication. " +
+                     "Set j-obs.security.enabled=true for production use.");
+        }
+
         return errors;
+    }
+
+    private void validateSecurity(List<String> errors, List<String> fatalErrors) {
+        Security security = properties.getSecurity();
+        if (!security.isEnabled()) {
+            return;
+        }
+
+        String authType = security.getType() != null ? security.getType().toLowerCase() : "basic";
+        boolean hasUsers = security.getUsers() != null && !security.getUsers().isEmpty();
+        boolean hasApiKeys = security.getApiKeys() != null && !security.getApiKeys().isEmpty();
+
+        switch (authType) {
+            case "basic" -> {
+                if (!hasUsers) {
+                    fatalErrors.add("j-obs.security.enabled=true with type=basic but no users configured. " +
+                            "Add at least one user via j-obs.security.users[0].username/password");
+                }
+            }
+            case "api-key" -> {
+                if (!hasApiKeys) {
+                    fatalErrors.add("j-obs.security.enabled=true with type=api-key but no API keys configured. " +
+                            "Add at least one key via j-obs.security.api-keys[0]");
+                }
+            }
+            case "both" -> {
+                if (!hasUsers && !hasApiKeys) {
+                    fatalErrors.add("j-obs.security.enabled=true with type=both but neither users nor API keys configured. " +
+                            "Add users via j-obs.security.users or API keys via j-obs.security.api-keys");
+                }
+            }
+            default -> fatalErrors.add("j-obs.security.type must be one of: basic, api-key, both. Got: " + security.getType());
+        }
+    }
+
+    private void validateRateLimiting(List<String> errors, List<String> fatalErrors) {
+        RateLimiting rateLimiting = properties.getRateLimiting();
+        if (!rateLimiting.isEnabled()) {
+            return;
+        }
+
+        if (rateLimiting.getMaxRequests() < 1) {
+            fatalErrors.add("j-obs.rate-limiting.max-requests must be at least 1. Got: " + rateLimiting.getMaxRequests());
+        }
+
+        Duration window = rateLimiting.getWindow();
+        if (window == null || window.isNegative() || window.isZero()) {
+            errors.add("j-obs.rate-limiting.window must be positive, using default '1m'");
+            rateLimiting.setWindow(Duration.ofMinutes(1));
+        }
     }
 
     private void validatePath(List<String> errors) {
@@ -117,6 +186,9 @@ public class JObsPropertiesValidator {
         if (traces.getMaxTraces() <= 0) {
             errors.add("j-obs.traces.max-traces must be positive, using default '10000'");
             traces.setMaxTraces(10000);
+        } else if (traces.getMaxTraces() < 100) {
+            errors.add("j-obs.traces.max-traces=" + traces.getMaxTraces() +
+                    " is very small and may cause traces to be discarded too quickly. Recommended minimum: 100");
         } else if (traces.getMaxTraces() > 1000000) {
             errors.add("j-obs.traces.max-traces is very high (" + traces.getMaxTraces() + "), may cause memory issues");
         }
@@ -125,6 +197,9 @@ public class JObsPropertiesValidator {
         if (retention == null || retention.isNegative() || retention.isZero()) {
             errors.add("j-obs.traces.retention must be positive, using default '1h'");
             traces.setRetention(Duration.ofHours(1));
+        } else if (retention.toMinutes() < 1) {
+            errors.add("j-obs.traces.retention=" + retention +
+                    " is less than 1 minute, traces will be discarded almost immediately. Recommended minimum: 1m");
         }
 
         double sampleRate = traces.getSampleRate();

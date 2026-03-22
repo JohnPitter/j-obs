@@ -5,16 +5,24 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.jobs.application.LogRepository;
 import io.github.jobs.domain.log.LogEntry;
 import io.github.jobs.domain.log.LogLevel;
+import io.github.jobs.spring.autoconfigure.JObsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -31,14 +39,21 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
     private static final int MAX_SESSIONS = 50;
     private static final Duration SESSION_TIMEOUT = Duration.ofMinutes(30);
     private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(5);
+    private static final CloseStatus AUTHENTICATION_REQUIRED = new CloseStatus(4001, "Authentication required");
 
     private final LogRepository logRepository;
+    private final JObsProperties properties;
     private final ObjectMapper objectMapper;
     private final Map<String, SessionContext> sessions = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupExecutor;
 
     public LogWebSocketHandler(LogRepository logRepository) {
+        this(logRepository, null);
+    }
+
+    public LogWebSocketHandler(LogRepository logRepository, JObsProperties properties) {
         this.logRepository = logRepository;
+        this.properties = properties;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
 
@@ -108,9 +123,75 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Creates a HandshakeInterceptor that propagates HTTP session attributes
+     * to WebSocket sessions for authentication verification.
+     */
+    public HandshakeInterceptor createAuthHandshakeInterceptor() {
+        return new HandshakeInterceptor() {
+            @Override
+            public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                           WebSocketHandler wsHandler, Map<String, Object> attributes) {
+                if (request instanceof ServletServerHttpRequest servletRequest) {
+                    var httpSession = servletRequest.getServletRequest().getSession(false);
+                    if (httpSession != null) {
+                        attributes.put("HTTP.SESSION", httpSession);
+                        Object authenticated = httpSession.getAttribute("j-obs.authenticated");
+                        if (Boolean.TRUE.equals(authenticated)) {
+                            attributes.put("j-obs.authenticated", true);
+                        }
+                    }
+
+                    // Also check for API key in query parameters
+                    URI uri = request.getURI();
+                    String query = uri.getQuery();
+                    if (query != null && properties != null) {
+                        String apiKey = extractQueryParam(query, "apiKey");
+                        if (apiKey != null && isValidApiKey(apiKey)) {
+                            attributes.put("j-obs.authenticated", true);
+                        }
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                       WebSocketHandler wsHandler, Exception exception) {
+                // No action needed
+            }
+        };
+    }
+
+    private String extractQueryParam(String query, String paramName) {
+        for (String param : query.split("&")) {
+            String[] parts = param.split("=", 2);
+            if (parts.length == 2 && parts[0].equals(paramName)) {
+                return parts[1];
+            }
+        }
+        return null;
+    }
+
+    private boolean isValidApiKey(String apiKey) {
+        if (properties == null) {
+            return false;
+        }
+        JObsProperties.Security security = properties.getSecurity();
+        List<String> validKeys = security.getApiKeys();
+        return validKeys != null && validKeys.contains(apiKey);
+    }
+
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String sessionId = session.getId();
+
+        // Check authentication if security is enabled
+        if (isSecurityEnabled() && !isAuthenticated(session)) {
+            log.debug("WebSocket connection rejected (not authenticated): {}", sessionId);
+            safeClose(session, AUTHENTICATION_REQUIRED);
+            return;
+        }
 
         // Reject if too many concurrent sessions (DoS protection)
         if (sessions.size() >= MAX_SESSIONS) {
@@ -262,6 +343,18 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
             log.error("WebSocket send failed fatally for session {}: {}", session.getId(), t.getMessage());
             safeClose(session, CloseStatus.SERVER_ERROR);
         }
+    }
+
+    private boolean isSecurityEnabled() {
+        return properties != null && properties.getSecurity().isEnabled();
+    }
+
+    private boolean isAuthenticated(WebSocketSession session) {
+        Map<String, Object> attributes = session.getAttributes();
+
+        // Check if authenticated via HTTP session or API key during handshake
+        Object authenticated = attributes.get("j-obs.authenticated");
+        return Boolean.TRUE.equals(authenticated);
     }
 
     /**

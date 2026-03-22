@@ -31,6 +31,18 @@ public class MetricsAspect {
     private final Map<String, Timer> timers = new ConcurrentHashMap<>();
     private final Map<String, Counter> counters = new ConcurrentHashMap<>();
     private final Map<String, Counter> exceptionCounters = new ConcurrentHashMap<>();
+    private final Map<Method, MeasuredMethodMetadata> metadataCache = new ConcurrentHashMap<>();
+
+    /**
+     * Cached metadata extracted from @Measured / @Observable annotations to avoid
+     * repeated reflection on every method invocation.
+     */
+    private record MeasuredMethodMetadata(
+            Measured annotation,
+            String className,
+            String methodName,
+            String metricKey
+    ) {}
 
     public MetricsAspect(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -69,15 +81,17 @@ public class MetricsAspect {
         Method method = signature.getMethod();
         Class<?> targetClass = joinPoint.getTarget().getClass();
 
-        // Get annotation configuration
-        Measured measured = getMeasuredAnnotation(method, targetClass);
-        if (measured == null) {
+        // Look up cached metadata or compute on first call
+        MeasuredMethodMetadata metadata = metadataCache.computeIfAbsent(method,
+                m -> buildMeasuredMetadata(m, targetClass));
+        if (metadata == null) {
             return joinPoint.proceed();
         }
 
-        String className = targetClass.getSimpleName();
-        String methodName = method.getName();
-        String metricKey = className + "." + methodName;
+        Measured measured = metadata.annotation();
+        String className = metadata.className();
+        String methodName = metadata.methodName();
+        String metricKey = metadata.metricKey();
 
         // Get or create metrics
         Timer timer = measured.recordTime() ? getOrCreateTimer(measured, className, methodName, metricKey) : null;
@@ -114,6 +128,21 @@ public class MetricsAspect {
                 throw e;
             }
         }
+    }
+
+    /**
+     * Builds and caches method metadata from annotations and reflection.
+     * Called once per unique method, then cached for subsequent invocations.
+     */
+    private MeasuredMethodMetadata buildMeasuredMetadata(Method method, Class<?> targetClass) {
+        Measured measured = getMeasuredAnnotation(method, targetClass);
+        if (measured == null) {
+            return null;
+        }
+        String className = targetClass.getSimpleName();
+        String methodName = method.getName();
+        String metricKey = className + "." + methodName;
+        return new MeasuredMethodMetadata(measured, className, methodName, metricKey);
     }
 
     private Measured getMeasuredAnnotation(Method method, Class<?> targetClass) {

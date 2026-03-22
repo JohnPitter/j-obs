@@ -31,7 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "j-obs.security.enabled=false",
         "j-obs.rate-limiting.enabled=false",
         "j-obs.logs.enabled=true",
-        "spring.main.allow-bean-definition-overriding=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "j-obs.persistence.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration"
 })
 class WebSocketE2ETest {
 

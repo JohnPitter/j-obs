@@ -113,13 +113,15 @@ public class JObsLogAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public LogWebSocketHandler logWebSocketHandler() {
-            return new LogWebSocketHandler(logRepository);
+            return new LogWebSocketHandler(logRepository, properties);
         }
 
         @Override
         public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
             String wsPath = properties.getPath() + "/ws/logs";
-            registry.addHandler(logWebSocketHandler(), wsPath)
+            LogWebSocketHandler handler = logWebSocketHandler();
+            registry.addHandler(handler, wsPath)
+                    .addInterceptors(handler.createAuthHandshakeInterceptor())
                     .setAllowedOrigins("*");
         }
     }

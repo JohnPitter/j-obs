@@ -1,3 +1,4 @@
+io.github.jobs.spring.autoconfigure.JObsPersistenceAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsObservabilityAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsSecurityAutoConfiguration
@@ -20,4 +21,5 @@ io.github.jobs.spring.autoconfigure.JObsAnomalyDetectionAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsServiceMapAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsSloAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsProfilingAutoConfiguration
+io.github.jobs.spring.autoconfigure.JObsRetentionAutoConfiguration
 io.github.jobs.spring.autoconfigure.JObsOpenApiAutoConfiguration

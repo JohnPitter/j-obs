@@ -1,5 +1,6 @@
 package io.github.jobs.spring.autoconfigure;
 
+import io.github.jobs.spring.security.RoleBasedAccessInterceptor;
 import io.github.jobs.spring.security.SecurityHeadersFilter;
 import io.github.jobs.spring.web.JObsAuthenticationFilter;
 import io.github.jobs.spring.webflux.ReactiveAuthenticationFilter;
@@ -73,6 +74,11 @@ public class JObsSecurityAutoConfiguration {
             registry.addInterceptor(jObsAuthenticationFilter())
                     .addPathPatterns(properties.getPath() + "/**")
                     .order(0); // Run before rate limiting
+
+            // Role-based access control runs after authentication
+            registry.addInterceptor(new RoleBasedAccessInterceptor(properties))
+                    .addPathPatterns(properties.getPath() + "/api/**")
+                    .order(1); // Run after authentication
         }
     }
 

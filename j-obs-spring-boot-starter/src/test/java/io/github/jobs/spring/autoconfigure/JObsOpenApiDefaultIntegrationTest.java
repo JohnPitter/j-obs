@@ -27,7 +27,10 @@ import static org.assertj.core.api.Assertions.assertThat;
         classes = JObsOpenApiDefaultIntegrationTest.TestConfig.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@TestPropertySource(properties = {"j-obs.enabled=true"})
+@TestPropertySource(properties = {
+        "j-obs.enabled=true",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration"
+})
 class JObsOpenApiDefaultIntegrationTest {
 
     @LocalServerPort

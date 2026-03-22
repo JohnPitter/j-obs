@@ -38,7 +38,9 @@ import java.util.Map;
         "j-obs.service-map.enabled=true",
         "j-obs.open-api.enabled=false",
         "management.endpoints.web.exposure.include=health,info,metrics",
-        "spring.main.allow-bean-definition-overriding=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "j-obs.persistence.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration"
 })
 abstract class E2ETestBase {
 

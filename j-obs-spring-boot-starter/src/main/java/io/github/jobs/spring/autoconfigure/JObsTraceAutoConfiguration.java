@@ -3,6 +3,8 @@ package io.github.jobs.spring.autoconfigure;
 import io.github.jobs.application.TraceRepository;
 import io.github.jobs.infrastructure.InMemoryTraceRepository;
 import io.github.jobs.spring.trace.JObsSpanExporter;
+import io.github.jobs.spring.trace.SamplingTraceRepository;
+import io.github.jobs.spring.trace.TraceSampler;
 import io.github.jobs.spring.web.TraceApiController;
 import io.github.jobs.spring.web.TraceController;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -74,13 +76,33 @@ public class JObsTraceAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(JObsTraceAutoConfiguration.class);
 
-    @Bean(destroyMethod = "shutdown")
+    @Bean
     @ConditionalOnMissingBean
-    public InMemoryTraceRepository traceRepository(JObsProperties properties) {
+    public TraceSampler traceSampler(JObsProperties properties) {
+        double sampleRate = properties.getTraces().getSampleRate();
+        log.info("Configuring trace sampler with sample rate: {}", sampleRate);
+        return new TraceSampler(sampleRate);
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    @ConditionalOnMissingBean(InMemoryTraceRepository.class)
+    public InMemoryTraceRepository inMemoryTraceRepository(JObsProperties properties) {
         return new InMemoryTraceRepository(
             properties.getTraces().getRetention(),
             properties.getTraces().getMaxTraces()
         );
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnMissingBean(SamplingTraceRepository.class)
+    public TraceRepository traceRepository(InMemoryTraceRepository inMemoryTraceRepository, TraceSampler traceSampler) {
+        double sampleRate = traceSampler.getSampleRate();
+        if (sampleRate < 1.0) {
+            log.info("Wrapping trace repository with sampling (rate={})", sampleRate);
+            return new SamplingTraceRepository(inMemoryTraceRepository, traceSampler);
+        }
+        return inMemoryTraceRepository;
     }
 
     @Bean

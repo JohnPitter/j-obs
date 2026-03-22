@@ -35,7 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "j-obs.security.api-keys[0]=test-api-key-12345",
         "j-obs.security.api-key-header=X-API-Key",
         "j-obs.rate-limiting.enabled=false",
-        "spring.main.allow-bean-definition-overriding=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "j-obs.persistence.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration"
 })
 class AuthenticationE2ETest {
 

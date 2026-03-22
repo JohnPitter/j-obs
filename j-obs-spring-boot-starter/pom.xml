@@ -77,6 +77,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- JDBC for optional database persistence -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- WebSocket for real-time streaming (optional) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

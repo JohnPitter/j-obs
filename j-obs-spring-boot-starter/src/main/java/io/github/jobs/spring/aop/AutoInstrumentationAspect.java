@@ -97,32 +97,49 @@ public class AutoInstrumentationAspect {
             return joinPoint.proceed();
         }
 
-        String className = classNameCache.computeIfAbsent(targetClass, this::getSimpleClassName);
-        String methodName = method.getName();
-        String spanName = className + "." + methodName;
-        String metricKey = spanName;
+        // Build instrumentation context with error boundary
+        String className;
+        String methodName;
+        Timer timer;
+        Span span;
+        try {
+            className = classNameCache.computeIfAbsent(targetClass, this::getSimpleClassName);
+            methodName = method.getName();
+            String spanName = className + "." + methodName;
 
-        // Get or create timer
-        Timer timer = getOrCreateTimer(className, methodName, metricKey);
+            // Get or create timer
+            timer = getOrCreateTimer(className, methodName, spanName);
 
-        // Create span
-        Span span = tracer.spanBuilder(spanName)
-                .setAttribute("code.function", methodName)
-                .setAttribute("code.namespace", targetClass.getName())
-                .setAttribute("component.type", getComponentType(targetClass))
-                .startSpan();
+            // Create span
+            span = tracer.spanBuilder(spanName)
+                    .setAttribute("code.function", methodName)
+                    .setAttribute("code.namespace", targetClass.getName())
+                    .setAttribute("component.type", getComponentType(targetClass))
+                    .startSpan();
+        } catch (Exception e) {
+            log.debug("Failed to create instrumentation context, proceeding without instrumentation", e);
+            return joinPoint.proceed();
+        }
 
         try (Scope scope = span.makeCurrent()) {
             // Record timing
             return timer.recordCallable(() -> {
                 try {
                     Object result = joinPoint.proceed();
-                    span.setStatus(StatusCode.OK);
+                    try {
+                        span.setStatus(StatusCode.OK);
+                    } catch (Exception spanError) {
+                        log.debug("Failed to set span status", spanError);
+                    }
                     return result;
                 } catch (Throwable e) {
-                    span.recordException(e);
-                    span.setStatus(StatusCode.ERROR, e.getMessage());
-                    incrementExceptionCounter(className, methodName);
+                    try {
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR, e.getMessage());
+                        incrementExceptionCounter(className, methodName);
+                    } catch (Exception spanError) {
+                        log.debug("Failed to record span exception", spanError);
+                    }
                     if (e instanceof Exception) {
                         throw (Exception) e;
                     }
@@ -130,7 +147,11 @@ public class AutoInstrumentationAspect {
                 }
             });
         } finally {
-            span.end();
+            try {
+                span.end();
+            } catch (Exception e) {
+                log.debug("Failed to end instrumentation span", e);
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package io.github.jobs.spring.web;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
 import io.github.jobs.spring.security.AuditLogger;
 import io.github.jobs.spring.security.ConstantTimeUtils;
+import io.github.jobs.spring.security.JObsRole;
 import io.github.jobs.spring.security.LoginRateLimiter;
 import io.github.jobs.spring.security.PasswordEncoder;
 import jakarta.servlet.http.HttpServletRequest;
@@ -178,7 +179,8 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
             return false;
         }
 
-        if (validateCredentials(username, password)) {
+        JObsProperties.Security.User matchedUser = findAuthenticatedUser(username, password);
+        if (matchedUser != null) {
             // Successful login - clear rate limiting for this IP
             loginRateLimiter.recordSuccessfulLogin(clientIp);
 
@@ -195,10 +197,20 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
             newSession.setAttribute(SESSION_ATTR_USERNAME, username);
             newSession.setMaxInactiveInterval((int) securityConfig.getSessionTimeout().toSeconds());
 
+            // Set user role in session for authorization checks
+            String roleName = matchedUser.getRole() != null ? matchedUser.getRole() : "ADMIN";
+            try {
+                JObsRole role = JObsRole.valueOf(roleName.toUpperCase());
+                newSession.setAttribute("j-obs-role", role);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid role '{}' for user '{}', defaulting to VIEWER", roleName, username);
+                newSession.setAttribute("j-obs-role", JObsRole.VIEWER);
+            }
+
             // Generate new CSRF token for the authenticated session
             newSession.setAttribute(SESSION_ATTR_CSRF_TOKEN, generateCsrfToken());
 
-            log.info("User '{}' logged in to J-Obs dashboard from {}", username, clientIp);
+            log.info("User '{}' logged in to J-Obs dashboard from {} with role {}", username, clientIp, roleName);
             AuditLogger.logLoginSuccess(username, clientIp);
 
             response.sendRedirect(redirectUrl);
@@ -309,6 +321,9 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         }
 
         if (apiKey != null && validateApiKey(apiKey)) {
+            // API keys always get ADMIN role (used for automation)
+            HttpSession session = request.getSession(true);
+            session.setAttribute("j-obs-role", JObsRole.ADMIN);
             AuditLogger.logApiKeyUsed(apiKey, request.getRemoteAddr());
             return true;
         }
@@ -340,7 +355,8 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
             String username = credentials.substring(0, colonIndex);
             String password = credentials.substring(colonIndex + 1);
 
-            if (validateCredentials(username, password)) {
+            JObsProperties.Security.User basicAuthUser = findAuthenticatedUser(username, password);
+            if (basicAuthUser != null) {
                 // Create session for browser requests
                 String acceptHeader = request.getHeader("Accept");
                 if (acceptHeader != null && acceptHeader.contains("text/html")) {
@@ -348,6 +364,14 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
                     session.setAttribute(SESSION_ATTR_AUTHENTICATED, true);
                     session.setAttribute(SESSION_ATTR_USERNAME, username);
                     session.setMaxInactiveInterval((int) securityConfig.getSessionTimeout().toSeconds());
+
+                    // Set user role in session
+                    String basicRoleName = basicAuthUser.getRole() != null ? basicAuthUser.getRole() : "ADMIN";
+                    try {
+                        session.setAttribute("j-obs-role", JObsRole.valueOf(basicRoleName.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        session.setAttribute("j-obs-role", JObsRole.VIEWER);
+                    }
                 }
                 return true;
             }
@@ -358,14 +382,17 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         return false;
     }
 
-    private boolean validateCredentials(String username, String password) {
+    /**
+     * Validates credentials and returns the matched user, or null if invalid.
+     */
+    private JObsProperties.Security.User findAuthenticatedUser(String username, String password) {
         if (username == null || password == null) {
-            return false;
+            return null;
         }
 
         List<JObsProperties.Security.User> users = securityConfig.getUsers();
         if (users == null || users.isEmpty()) {
-            return false;
+            return null;
         }
 
         // Find matching user by username (constant-time comparison),
@@ -382,10 +409,17 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         if (matchedUser == null) {
             // Run dummy PBKDF2 to equalize timing with a real match
             PasswordEncoder.matches(password, DUMMY_ENCODED_PASSWORD);
-            return false;
+            return null;
         }
 
-        return PasswordEncoder.matches(password, matchedUser.getPassword());
+        if (PasswordEncoder.matches(password, matchedUser.getPassword())) {
+            return matchedUser;
+        }
+        return null;
+    }
+
+    private boolean validateCredentials(String username, String password) {
+        return findAuthenticatedUser(username, password) != null;
     }
 
     private boolean validateApiKey(String apiKey) {

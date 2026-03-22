@@ -74,9 +74,14 @@ public class SecurityHeadersFilter implements Filter {
                         "max-age=" + config.getHstsMaxAge() + "; includeSubDomains");
             }
 
-            // Cache control for HTML pages (not static assets)
+            // Cache control for HTML pages and API responses (not static assets)
             String path = httpRequest.getRequestURI();
-            if (isHtmlPage(path)) {
+            if (isApiPath(path)) {
+                // API responses must not be cached to prevent leaking sensitive data
+                httpResponse.setHeader("Cache-Control", "no-store");
+                httpResponse.setHeader("Pragma", "no-cache");
+                httpResponse.setHeader("Expires", "0");
+            } else if (isHtmlPage(path)) {
                 httpResponse.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
                 httpResponse.setHeader("Pragma", "no-cache");
                 httpResponse.setHeader("Expires", "0");
@@ -95,6 +100,10 @@ public class SecurityHeadersFilter implements Filter {
         return request.isSecure() ||
                "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto")) ||
                "https".equalsIgnoreCase(request.getScheme());
+    }
+
+    private boolean isApiPath(String path) {
+        return path.contains("/api/");
     }
 
     private boolean isHtmlPage(String path) {
