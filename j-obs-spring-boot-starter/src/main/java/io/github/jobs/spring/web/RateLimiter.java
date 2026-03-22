@@ -103,10 +103,13 @@ public class RateLimiter implements DisposableBean {
         }
 
         synchronized (timestamps) {
-            long validCount = timestamps.stream()
-                    .filter(t -> !t.isBefore(cutoff))
-                    .count();
-            return Math.max(0, maxRequests - (int) validCount);
+            int validCount = 0;
+            for (Instant t : timestamps) {
+                if (!t.isBefore(cutoff)) {
+                    validCount++;
+                }
+            }
+            return Math.max(0, maxRequests - validCount);
         }
     }
 

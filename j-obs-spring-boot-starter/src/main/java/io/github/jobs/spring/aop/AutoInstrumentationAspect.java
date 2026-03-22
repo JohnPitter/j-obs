@@ -31,10 +31,13 @@ public class AutoInstrumentationAspect {
 
     private static final Logger log = LoggerFactory.getLogger(AutoInstrumentationAspect.class);
 
+    private static final int MAX_METRICS = 10_000;
+
     private final Tracer tracer;
     private final MeterRegistry meterRegistry;
     private final Map<String, Timer> timers = new ConcurrentHashMap<>();
     private final Map<String, Counter> counters = new ConcurrentHashMap<>();
+    private final Map<Class<?>, String> classNameCache = new ConcurrentHashMap<>();
 
     public AutoInstrumentationAspect(Tracer tracer, MeterRegistry meterRegistry) {
         this.tracer = tracer;
@@ -94,7 +97,7 @@ public class AutoInstrumentationAspect {
             return joinPoint.proceed();
         }
 
-        String className = getSimpleClassName(targetClass);
+        String className = classNameCache.computeIfAbsent(targetClass, this::getSimpleClassName);
         String methodName = method.getName();
         String spanName = className + "." + methodName;
         String metricKey = spanName;
@@ -152,6 +155,16 @@ public class AutoInstrumentationAspect {
     }
 
     private Timer getOrCreateTimer(String className, String methodName, String key) {
+        Timer existing = timers.get(key);
+        if (existing != null) {
+            return existing;
+        }
+        if (timers.size() >= MAX_METRICS) {
+            log.warn("Maximum number of auto-instrumented timers reached ({}), skipping metric for {}", MAX_METRICS, key);
+            return Timer.builder("method.execution.overflow")
+                    .description("Overflow timer when max metrics reached")
+                    .register(meterRegistry);
+        }
         return timers.computeIfAbsent(key, k ->
                 Timer.builder("method.execution")
                         .description("Method execution time")
@@ -164,6 +177,15 @@ public class AutoInstrumentationAspect {
 
     private void incrementExceptionCounter(String className, String methodName) {
         String key = className + "." + methodName + ".exceptions";
+        Counter existing = counters.get(key);
+        if (existing != null) {
+            existing.increment();
+            return;
+        }
+        if (counters.size() >= MAX_METRICS) {
+            log.warn("Maximum number of auto-instrumented counters reached ({}), skipping metric for {}", MAX_METRICS, key);
+            return;
+        }
         counters.computeIfAbsent(key, k ->
                 Counter.builder("method.exceptions")
                         .description("Method exception count")

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MetricsAspect {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsAspect.class);
+    private static final int MAX_METRICS = 10_000;
 
     private final MeterRegistry meterRegistry;
     private final Map<String, Timer> timers = new ConcurrentHashMap<>();
@@ -188,6 +189,16 @@ public class MetricsAspect {
     }
 
     private Timer getOrCreateTimer(Measured measured, String className, String methodName, String key) {
+        Timer existing = timers.get(key);
+        if (existing != null) {
+            return existing;
+        }
+        if (timers.size() >= MAX_METRICS) {
+            log.warn("Maximum number of measured timers reached ({}), skipping metric for {}", MAX_METRICS, key);
+            return Timer.builder("method.timed.overflow")
+                    .description("Overflow timer when max metrics reached")
+                    .register(meterRegistry);
+        }
         return timers.computeIfAbsent(key, k -> {
             String name = measured.name().isEmpty() ? "method.timed" : measured.name();
             Timer.Builder builder = Timer.builder(name)
@@ -213,7 +224,18 @@ public class MetricsAspect {
     }
 
     private Counter getOrCreateCounter(Measured measured, String className, String methodName, String key) {
-        return counters.computeIfAbsent(key + ".calls", k -> {
+        String callsKey = key + ".calls";
+        Counter existing = counters.get(callsKey);
+        if (existing != null) {
+            return existing;
+        }
+        if (counters.size() >= MAX_METRICS) {
+            log.warn("Maximum number of measured counters reached ({}), skipping metric for {}", MAX_METRICS, key);
+            return Counter.builder("method.calls.overflow")
+                    .description("Overflow counter when max metrics reached")
+                    .register(meterRegistry);
+        }
+        return counters.computeIfAbsent(callsKey, k -> {
             String name = measured.name().isEmpty() ? "method.calls" : measured.name() + ".calls";
             Counter.Builder builder = Counter.builder(name)
                     .description("Method invocation count")
@@ -233,7 +255,18 @@ public class MetricsAspect {
     }
 
     private Counter getOrCreateExceptionCounter(Measured measured, String className, String methodName, String key) {
-        return exceptionCounters.computeIfAbsent(key + ".exceptions", k -> {
+        String exceptionsKey = key + ".exceptions";
+        Counter existing = exceptionCounters.get(exceptionsKey);
+        if (existing != null) {
+            return existing;
+        }
+        if (exceptionCounters.size() >= MAX_METRICS) {
+            log.warn("Maximum number of measured exception counters reached ({}), skipping metric for {}", MAX_METRICS, key);
+            return Counter.builder("method.exceptions.overflow")
+                    .description("Overflow counter when max metrics reached")
+                    .register(meterRegistry);
+        }
+        return exceptionCounters.computeIfAbsent(exceptionsKey, k -> {
             String name = measured.name().isEmpty() ? "method.exceptions" : measured.name() + ".exceptions";
             Counter.Builder builder = Counter.builder(name)
                     .description("Method exception count")

@@ -209,9 +209,8 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         loginRateLimiter.recordFailedAttempt(clientIp);
         int remaining = loginRateLimiter.getRemainingAttempts(clientIp);
 
-        log.warn("Failed login attempt for user '{}' from {} ({} attempts remaining)",
-                username, clientIp, remaining);
-        AuditLogger.logLoginFailure(username, clientIp, remaining);
+        log.warn("Failed login attempt from {} ({} attempts remaining)", clientIp, remaining);
+        AuditLogger.logLoginFailure(clientIp, remaining);
 
         if (remaining == 0) {
             long lockoutSeconds = loginRateLimiter.getLockoutRemaining(clientIp).toSeconds();

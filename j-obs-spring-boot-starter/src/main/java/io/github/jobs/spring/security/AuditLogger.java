@@ -89,14 +89,13 @@ public final class AuditLogger {
 
     /**
      * Logs a failed login attempt.
+     * Note: username is intentionally excluded to prevent username enumeration via logs.
      *
-     * @param username          the username that attempted to log in
      * @param ip                the client IP address
      * @param remainingAttempts number of attempts remaining before lockout
      */
-    public static void logLoginFailure(String username, String ip, int remainingAttempts) {
+    public static void logLoginFailure(String ip, int remainingAttempts) {
         log(EventType.LOGIN_FAILURE, Map.of(
-                "user", sanitize(username),
                 "ip", sanitize(ip),
                 "remainingAttempts", String.valueOf(remainingAttempts)
         ));
