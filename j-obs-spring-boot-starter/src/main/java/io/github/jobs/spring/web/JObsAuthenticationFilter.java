@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -43,14 +45,18 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
     private static final int CSRF_TOKEN_LENGTH = 32;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    // Pre-computed dummy hash for timing-safe credential validation when username doesn't match
+    private static final String DUMMY_ENCODED_PASSWORD = PasswordEncoder.encode("j-obs-dummy-timing-equalization");
 
     private final JObsProperties.Security securityConfig;
     private final String pathPrefix;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final LoginRateLimiter loginRateLimiter;
 
-    // Cache for validated API keys (key -> timestamp)
-    private final Map<String, Long> validatedApiKeys = new ConcurrentHashMap<>();
+    // Cache for validated API keys (SHA-256 hash -> timestamp) to avoid storing raw keys
+    private static final long API_KEY_CACHE_TTL_MS = 60_000;
+    private static final int API_KEY_CACHE_MAX_SIZE = 100;
+    private final Map<String, Long> validatedApiKeyHashes = new ConcurrentHashMap<>();
 
     public JObsAuthenticationFilter(JObsProperties.Security securityConfig, String pathPrefix) {
         this(securityConfig, pathPrefix, new LoginRateLimiter());
@@ -363,18 +369,24 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
             return false;
         }
 
+        // Find matching user by username (constant-time comparison),
+        // then run expensive PBKDF2 only once for the matched user.
+        // Always run PBKDF2 (even on miss) to prevent timing oracle on username existence.
+        JObsProperties.Security.User matchedUser = null;
         for (JObsProperties.Security.User user : users) {
-            // Constant-time username comparison
-            boolean usernameMatches = secureCompare(username, user.getUsername());
-            // Use PasswordEncoder for password verification (supports both hashed and plaintext)
-            boolean passwordMatches = PasswordEncoder.matches(password, user.getPassword());
-
-            if (usernameMatches && passwordMatches) {
-                return true;
+            if (ConstantTimeUtils.secureEquals(username, user.getUsername())) {
+                matchedUser = user;
+                break;
             }
         }
 
-        return false;
+        if (matchedUser == null) {
+            // Run dummy PBKDF2 to equalize timing with a real match
+            PasswordEncoder.matches(password, DUMMY_ENCODED_PASSWORD);
+            return false;
+        }
+
+        return PasswordEncoder.matches(password, matchedUser.getPassword());
     }
 
     private boolean validateApiKey(String apiKey) {
@@ -387,16 +399,21 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
             return false;
         }
 
-        // Check cache first for performance
-        Long cachedTime = validatedApiKeys.get(apiKey);
-        if (cachedTime != null && System.currentTimeMillis() - cachedTime < 60000) {
+        // Check cache first (hash computed only once per validation)
+        String keyHash = sha256(apiKey);
+        Long cachedTime = validatedApiKeyHashes.get(keyHash);
+        if (cachedTime != null && System.currentTimeMillis() - cachedTime < API_KEY_CACHE_TTL_MS) {
             return true;
         }
 
         for (String validKey : validKeys) {
-            // Use constant-time comparison to prevent timing attacks
-            if (secureCompare(apiKey, validKey)) {
-                validatedApiKeys.put(apiKey, System.currentTimeMillis());
+            if (ConstantTimeUtils.secureEquals(apiKey, validKey)) {
+                long now = System.currentTimeMillis();
+                // Evict expired entries before inserting
+                if (validatedApiKeyHashes.size() >= API_KEY_CACHE_MAX_SIZE) {
+                    validatedApiKeyHashes.entrySet().removeIf(e -> now - e.getValue() >= API_KEY_CACHE_TTL_MS);
+                }
+                validatedApiKeyHashes.put(keyHash, now);
                 return true;
             }
         }
@@ -404,12 +421,15 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         return false;
     }
 
-    /**
-     * Constant-time string comparison to prevent timing attacks.
-     * Uses {@link ConstantTimeUtils#secureEquals} which doesn't leak length information.
-     */
-    private boolean secureCompare(String a, String b) {
-        return ConstantTimeUtils.secureEquals(a, b);
+    private static String sha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is always available in Java
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     /**
@@ -452,7 +472,7 @@ public class JObsAuthenticationFilter implements HandlerInterceptor, DisposableB
         }
 
         // Constant-time comparison to prevent timing attacks
-        return secureCompare(expectedToken, providedToken);
+        return ConstantTimeUtils.secureEquals(expectedToken, providedToken);
     }
 
     /**

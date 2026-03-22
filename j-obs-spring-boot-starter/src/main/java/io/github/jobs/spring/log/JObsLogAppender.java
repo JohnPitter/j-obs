@@ -132,7 +132,6 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
 
     private String extractTraceId(ILoggingEvent event) {
         Map<String, String> mdc = event.getMDCPropertyMap();
-        // Try common trace ID keys from MDC
         String traceId = mdc.get("traceId");
         if (traceId == null) {
             traceId = mdc.get("trace_id");
@@ -140,16 +139,17 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
         if (traceId == null) {
             traceId = mdc.get("X-B3-TraceId");
         }
-        // If not in MDC, try to get from OpenTelemetry current span
         if (traceId == null) {
-            traceId = extractTraceIdFromOtel();
+            SpanContext ctx = getOtelSpanContext();
+            if (ctx != null) {
+                traceId = ctx.getTraceId();
+            }
         }
         return traceId;
     }
 
     private String extractSpanId(ILoggingEvent event) {
         Map<String, String> mdc = event.getMDCPropertyMap();
-        // Try common span ID keys from MDC
         String spanId = mdc.get("spanId");
         if (spanId == null) {
             spanId = mdc.get("span_id");
@@ -157,35 +157,22 @@ public class JObsLogAppender extends AppenderBase<ILoggingEvent> {
         if (spanId == null) {
             spanId = mdc.get("X-B3-SpanId");
         }
-        // If not in MDC, try to get from OpenTelemetry current span
         if (spanId == null) {
-            spanId = extractSpanIdFromOtel();
+            SpanContext ctx = getOtelSpanContext();
+            if (ctx != null) {
+                spanId = ctx.getSpanId();
+            }
         }
         return spanId;
     }
 
-    private String extractTraceIdFromOtel() {
+    private SpanContext getOtelSpanContext() {
         try {
-            SpanContext spanContext = Span.current().getSpanContext();
-            if (spanContext.isValid()) {
-                return spanContext.getTraceId();
-            }
+            SpanContext ctx = Span.current().getSpanContext();
+            return ctx.isValid() ? ctx : null;
         } catch (NoClassDefFoundError | Exception e) {
-            // OpenTelemetry not available or error, ignore
+            return null;
         }
-        return null;
-    }
-
-    private String extractSpanIdFromOtel() {
-        try {
-            SpanContext spanContext = Span.current().getSpanContext();
-            if (spanContext.isValid()) {
-                return spanContext.getSpanId();
-            }
-        } catch (NoClassDefFoundError | Exception e) {
-            // OpenTelemetry not available or error, ignore
-        }
-        return null;
     }
 
     private String formatThrowable(IThrowableProxy throwableProxy) {

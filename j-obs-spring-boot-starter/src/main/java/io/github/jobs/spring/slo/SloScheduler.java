@@ -81,10 +81,15 @@ public class SloScheduler implements DisposableBean {
         try {
             List<SloEvaluation> evaluations = sloService.evaluateAll();
 
-            // Log summary
-            long healthy = evaluations.stream().filter(e -> e.status() == SloStatus.HEALTHY).count();
-            long atRisk = evaluations.stream().filter(e -> e.status() == SloStatus.AT_RISK).count();
-            long breached = evaluations.stream().filter(e -> e.status() == SloStatus.BREACHED).count();
+            // Log summary — single pass
+            long healthy = 0, atRisk = 0, breached = 0;
+            for (SloEvaluation e : evaluations) {
+                switch (e.status()) {
+                    case HEALTHY -> healthy++;
+                    case AT_RISK -> atRisk++;
+                    case BREACHED -> breached++;
+                }
+            }
 
             if (breached > 0 || atRisk > 0) {
                 log.warn("SLO evaluation: {} healthy, {} at risk, {} breached",

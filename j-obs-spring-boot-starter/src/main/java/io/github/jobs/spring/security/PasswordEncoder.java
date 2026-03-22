@@ -93,7 +93,7 @@ public final class PasswordEncoder {
 
         // Plaintext comparison (backward compatibility) with constant-time comparison
         log.warn("Plaintext password detected. Please hash passwords using PasswordEncoder.encode() for security.");
-        return secureCompare(rawPassword.toString(), encodedPassword);
+        return ConstantTimeUtils.secureEquals(rawPassword.toString(), encodedPassword);
     }
 
     /**
@@ -126,7 +126,7 @@ public final class PasswordEncoder {
 
             byte[] actualHash = pbkdf2(rawPassword, salt);
 
-            return constantTimeEquals(expectedHash, actualHash);
+            return ConstantTimeUtils.equals(expectedHash, actualHash);
         } catch (IllegalArgumentException e) {
             log.debug("Failed to decode password: {}", e.getMessage());
             return false;
@@ -162,19 +162,4 @@ public final class PasswordEncoder {
         return chars;
     }
 
-    /**
-     * Constant-time byte array comparison to prevent timing attacks.
-     * Uses {@link ConstantTimeUtils#equals(byte[], byte[])} for guaranteed constant-time operation.
-     */
-    private static boolean constantTimeEquals(byte[] a, byte[] b) {
-        return ConstantTimeUtils.equals(a, b);
-    }
-
-    /**
-     * Constant-time string comparison to prevent timing attacks.
-     * Uses {@link ConstantTimeUtils#secureEquals} which doesn't leak length information.
-     */
-    private static boolean secureCompare(String a, String b) {
-        return ConstantTimeUtils.secureEquals(a, b);
-    }
 }

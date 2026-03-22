@@ -53,8 +53,8 @@ public class JObsAnomalyDetectionAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AnomalyController anomalyController(AnomalyDetector anomalyDetector, JObsProperties properties) {
-        return new AnomalyController(anomalyDetector, properties);
+    public AnomalyController anomalyController(JObsProperties properties) {
+        return new AnomalyController(properties);
     }
 
     @Bean

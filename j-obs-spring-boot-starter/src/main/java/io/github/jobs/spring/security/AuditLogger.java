@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -31,6 +30,10 @@ import java.util.Map;
 public final class AuditLogger {
 
     private static final Logger log = LoggerFactory.getLogger("j-obs.audit");
+
+    private static final java.util.regex.Pattern WHITESPACE_CONTROL = java.util.regex.Pattern.compile("[\\r\\n\\t]");
+    private static final java.util.regex.Pattern CONTROL_CHARS = java.util.regex.Pattern.compile("[\\x00-\\x1F]");
+    private static final int MAX_SANITIZED_LENGTH = 256;
 
     /**
      * Audit event types for categorization.
@@ -243,9 +246,7 @@ public final class AuditLogger {
 
         // Add custom attributes
         if (attributes != null) {
-            // Use LinkedHashMap to preserve order
-            Map<String, String> orderedAttrs = new LinkedHashMap<>(attributes);
-            orderedAttrs.forEach((key, value) -> {
+            attributes.forEach((key, value) -> {
                 sb.append(" ").append(key).append("=").append(value);
             });
         }
@@ -262,10 +263,12 @@ public final class AuditLogger {
         if (value == null) {
             return "-";
         }
-        // Remove control characters and limit length
-        return value
-                .replaceAll("[\\r\\n\\t]", " ")
-                .replaceAll("[\\x00-\\x1F]", "")
-                .substring(0, Math.min(value.length(), 256));
+        // Remove control characters first, then limit length
+        String sanitized = WHITESPACE_CONTROL.matcher(value).replaceAll(" ");
+        sanitized = CONTROL_CHARS.matcher(sanitized).replaceAll("");
+        if (sanitized.length() > MAX_SANITIZED_LENGTH) {
+            sanitized = sanitized.substring(0, MAX_SANITIZED_LENGTH);
+        }
+        return sanitized;
     }
 }

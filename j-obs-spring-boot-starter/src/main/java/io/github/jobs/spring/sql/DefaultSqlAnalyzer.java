@@ -388,26 +388,23 @@ public class DefaultSqlAnalyzer implements SqlAnalyzer {
     public SqlAnalysisStats getStats() {
         Collection<SqlIssue> issues = detectedIssues.values();
 
-        long critical = issues.stream().filter(SqlIssue::isCritical).count();
-        long warning = issues.stream()
-                .filter(i -> i.type().isWarning())
-                .count();
-        long nPlusOne = issues.stream()
-                .filter(i -> i.type() == SqlProblemType.N_PLUS_ONE)
-                .count();
-        long slowQueries = issues.stream()
-                .filter(i -> i.type() == SqlProblemType.SLOW_QUERY ||
-                        i.type() == SqlProblemType.VERY_SLOW_QUERY)
-                .count();
+        long critical = 0, warning = 0, nPlusOne = 0, slowQueries = 0;
+        for (SqlIssue issue : issues) {
+            if (issue.isCritical()) critical++;
+            if (issue.type().isWarning()) warning++;
+            if (issue.type() == SqlProblemType.N_PLUS_ONE) nPlusOne++;
+            if (issue.type() == SqlProblemType.SLOW_QUERY ||
+                    issue.type() == SqlProblemType.VERY_SLOW_QUERY) slowQueries++;
+        }
 
         return new SqlAnalysisStats(
-                0, // Would need query count tracking
+                0,
                 issues.size(),
                 critical,
                 warning,
                 nPlusOne,
                 slowQueries,
-                0.0 // Would need query duration tracking
+                0.0
         );
     }
 

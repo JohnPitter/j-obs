@@ -26,7 +26,7 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
 
     private final InMemoryProfilingRepository repository;
     private final ScheduledExecutorService scheduler;
-    private final Map<String, ScheduledFuture<?>> runningProfiles;
+    private final Map<String, ScheduledFuture<?>[]> runningProfiles;
     private final Map<String, CpuProfileCollector> collectors;
 
     public DefaultProfilingService(InMemoryProfilingRepository repository) {
@@ -78,7 +78,7 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
                 TimeUnit.MILLISECONDS
         );
 
-        runningProfiles.put(session.id(), samplingFuture);
+        runningProfiles.put(session.id(), new ScheduledFuture<?>[]{ samplingFuture, stopFuture });
 
         return session;
     }
@@ -99,10 +99,12 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
             return session;
         }
 
-        // Cancel the sampling
-        ScheduledFuture<?> future = runningProfiles.remove(sessionId);
-        if (future != null) {
-            future.cancel(false);
+        // Cancel the sampling and stop futures
+        ScheduledFuture<?>[] futures = runningProfiles.remove(sessionId);
+        if (futures != null) {
+            for (ScheduledFuture<?> f : futures) {
+                if (f != null) f.cancel(false);
+            }
         }
 
         // Get the collector and build results
@@ -253,9 +255,11 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
         }
 
         // Cancel any scheduled tasks
-        ScheduledFuture<?> future = runningProfiles.remove(sessionId);
-        if (future != null) {
-            future.cancel(true);
+        ScheduledFuture<?>[] futures = runningProfiles.remove(sessionId);
+        if (futures != null) {
+            for (ScheduledFuture<?> f : futures) {
+                if (f != null) f.cancel(true);
+            }
         }
         collectors.remove(sessionId);
 
@@ -304,7 +308,11 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
      */
     public void shutdown() {
         // Cancel all running profiles
-        runningProfiles.forEach((id, future) -> future.cancel(true));
+        runningProfiles.forEach((id, futures) -> {
+            for (ScheduledFuture<?> f : futures) {
+                if (f != null) f.cancel(true);
+            }
+        });
         runningProfiles.clear();
         collectors.clear();
 
@@ -354,7 +362,7 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
         }
 
         List<CpuSample> getSamples() {
-            long total = samples.values().stream().mapToLong(s -> s.count).sum();
+            long total = samples.values().stream().mapToLong(SampleData::getCount).sum();
             if (total == 0) {
                 return List.of();
             }
@@ -364,8 +372,9 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
                         List<CpuSample.StackFrame> frames = Arrays.stream(data.stackTrace)
                                 .map(CpuSample.StackFrame::from)
                                 .toList();
-                        double pct = (data.count * 100.0) / total;
-                        return new CpuSample(frames, data.count, pct);
+                        long count = data.getCount();
+                        double pct = (count * 100.0) / total;
+                        return new CpuSample(frames, count, pct);
                     })
                     .sorted((a, b) -> Long.compare(b.sampleCount(), a.sampleCount()))
                     .toList();
@@ -383,14 +392,18 @@ public class DefaultProfilingService implements ProfilingService, DisposableBean
 
         private static class SampleData {
             final StackTraceElement[] stackTrace;
-            volatile long count = 0;
+            final java.util.concurrent.atomic.AtomicLong count = new java.util.concurrent.atomic.AtomicLong();
 
             SampleData(StackTraceElement[] stackTrace) {
                 this.stackTrace = stackTrace;
             }
 
             void increment() {
-                count++;
+                count.incrementAndGet();
+            }
+
+            long getCount() {
+                return count.get();
             }
         }
     }

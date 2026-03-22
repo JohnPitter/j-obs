@@ -7,6 +7,7 @@ import io.github.jobs.domain.trace.Trace;
 import io.github.jobs.domain.trace.TraceQuery;
 
 import java.io.Closeable;
+import java.util.Collections;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -98,8 +99,9 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
     public List<Trace> query(TraceQuery query) {
         lock.readLock().lock();
         try {
+            Instant now = Instant.now();
             return traces.values().stream()
-                .filter(e -> !e.isExpired(ttl))
+                .filter(e -> !e.isExpired(ttl, now))
                 .map(TraceEntry::toTrace)
                 .filter(query::matches)
                 .sorted(Comparator.comparing(Trace::startTime).reversed())
@@ -115,8 +117,9 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
     public long count() {
         lock.readLock().lock();
         try {
+            Instant now = Instant.now();
             return traces.values().stream()
-                .filter(e -> !e.isExpired(ttl))
+                .filter(e -> !e.isExpired(ttl, now))
                 .count();
         } finally {
             lock.readLock().unlock();
@@ -127,8 +130,9 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
     public long count(TraceQuery query) {
         lock.readLock().lock();
         try {
+            Instant now = Instant.now();
             return traces.values().stream()
-                .filter(e -> !e.isExpired(ttl))
+                .filter(e -> !e.isExpired(ttl, now))
                 .map(TraceEntry::toTrace)
                 .filter(query::matches)
                 .count();
@@ -151,8 +155,9 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
     public TraceStats stats() {
         lock.readLock().lock();
         try {
+            Instant now = Instant.now();
             List<Trace> allTraces = traces.values().stream()
-                .filter(e -> !e.isExpired(ttl))
+                .filter(e -> !e.isExpired(ttl, now))
                 .map(TraceEntry::toTrace)
                 .toList();
 
@@ -160,23 +165,22 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
                 return TraceStats.empty();
             }
 
-            long totalSpans = allTraces.stream()
-                .mapToLong(Trace::spanCount)
-                .sum();
+            // Single-pass computation
+            long totalSpans = 0;
+            long errorTraces = 0;
+            List<Long> durations = new ArrayList<>(allTraces.size());
+            long durationSum = 0;
 
-            long errorTraces = allTraces.stream()
-                .filter(Trace::hasError)
-                .count();
+            for (Trace trace : allTraces) {
+                totalSpans += trace.spanCount();
+                if (trace.hasError()) errorTraces++;
+                long dur = trace.durationMs();
+                durations.add(dur);
+                durationSum += dur;
+            }
 
-            List<Long> durations = allTraces.stream()
-                .map(Trace::durationMs)
-                .sorted()
-                .toList();
-
-            double avgDuration = durations.stream()
-                .mapToLong(Long::longValue)
-                .average()
-                .orElse(0);
+            Collections.sort(durations);
+            double avgDuration = (double) durationSum / allTraces.size();
 
             return new TraceStats(
                 allTraces.size(),
@@ -284,7 +288,11 @@ public class InMemoryTraceRepository implements TraceRepository, Closeable {
         }
 
         boolean isExpired(Duration ttl) {
-            return Instant.now().isAfter(lastAccess.plus(ttl));
+            return isExpired(ttl, Instant.now());
+        }
+
+        boolean isExpired(Duration ttl, Instant now) {
+            return now.isAfter(lastAccess.plus(ttl));
         }
 
         Trace toTrace() {

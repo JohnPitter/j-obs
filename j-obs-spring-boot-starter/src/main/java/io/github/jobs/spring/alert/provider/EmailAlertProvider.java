@@ -64,6 +64,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class EmailAlertProvider extends AbstractAlertProvider {
 
+    private static final SSLSocketFactory SHARED_SSL_FACTORY = createSSLSocketFactory();
     private final Email config;
 
     /**
@@ -203,13 +204,17 @@ public class EmailAlertProvider extends AbstractAlertProvider {
         }
     }
 
-    private SSLSocketFactory getSSLSocketFactory() throws IOException {
+    private SSLSocketFactory getSSLSocketFactory() {
+        return SHARED_SSL_FACTORY;
+    }
+
+    private static SSLSocketFactory createSSLSocketFactory() {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(null, null, null);
             return sslContext.getSocketFactory();
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            throw new IOException("Failed to create SSL context", e);
+            throw new IllegalStateException("Failed to create SSL context", e);
         }
     }
 
@@ -253,7 +258,10 @@ public class EmailAlertProvider extends AbstractAlertProvider {
 
         // Check that first 3 characters are digits
         String codeStr = response.substring(0, 3);
-        if (!codeStr.matches("\\d{3}")) {
+        if (codeStr.length() != 3 ||
+            !Character.isDigit(codeStr.charAt(0)) ||
+            !Character.isDigit(codeStr.charAt(1)) ||
+            !Character.isDigit(codeStr.charAt(2))) {
             throw new IOException("Invalid SMTP response format (no valid code) for " + command + ": " + response);
         }
 

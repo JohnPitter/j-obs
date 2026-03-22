@@ -63,7 +63,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * @see JObsAlertAutoConfiguration
  * @see JObsProperties.Alerts
  */
-@AutoConfiguration(after = JObsAlertAutoConfiguration.class)
+@AutoConfiguration(after = {
+        JObsAlertAutoConfiguration.class,
+        JObsMetricAutoConfiguration.class,
+        JObsLogAutoConfiguration.class,
+        JObsHealthAutoConfiguration.class
+})
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnProperty(name = "j-obs.enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JObsProperties.class)

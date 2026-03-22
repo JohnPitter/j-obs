@@ -37,55 +37,55 @@ public class LogSanitizer {
             // Passwords in various formats
             new SanitizationRule(
                     "password",
-                    Pattern.compile("(?i)(password|passwd|pwd|secret|credential)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(password|passwd|pwd|secret|credential)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)"),
                     "$1=***REDACTED***"
             ),
             // JSON passwords
             new SanitizationRule(
                     "json-password",
-                    Pattern.compile("(?i)(\"(?:password|passwd|pwd|secret|credential)\"\\s*:\\s*)\"[^\"]*\"", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(\"(?:password|passwd|pwd|secret|credential)\"\\s*:\\s*)\"[^\"]*\""),
                     "$1\"***REDACTED***\""
             ),
             // API keys
             new SanitizationRule(
                     "api-key",
-                    Pattern.compile("(?i)(api[_-]?key|apikey|x-api-key)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(api[_-]?key|apikey|x-api-key)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)"),
                     "$1=***REDACTED***"
             ),
             // JSON API keys
             new SanitizationRule(
                     "json-api-key",
-                    Pattern.compile("(?i)(\"(?:api[_-]?key|apikey)\"\\s*:\\s*)\"[^\"]*\"", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(\"(?:api[_-]?key|apikey)\"\\s*:\\s*)\"[^\"]*\""),
                     "$1\"***REDACTED***\""
             ),
             // Bearer tokens
             new SanitizationRule(
                     "bearer-token",
-                    Pattern.compile("(?i)(Bearer\\s+)[A-Za-z0-9._~+/=-]+", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(Bearer\\s+)[A-Za-z0-9._~+/=-]+"),
                     "$1***REDACTED***"
             ),
             // Basic Auth header
             new SanitizationRule(
                     "basic-auth",
-                    Pattern.compile("(?i)(Basic\\s+)[A-Za-z0-9+/=]+", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(Basic\\s+)[A-Za-z0-9+/=]+"),
                     "$1***REDACTED***"
             ),
             // Authorization header value
             new SanitizationRule(
                     "auth-header",
-                    Pattern.compile("(?i)(Authorization[\"'\\s]*[:=][\"'\\s]*)([^\"'\\s,;&]+)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(Authorization[\"'\\s]*[:=][\"'\\s]*)([^\"'\\s,;&]+)"),
                     "$1***REDACTED***"
             ),
             // Generic tokens
             new SanitizationRule(
                     "token",
-                    Pattern.compile("(?i)((?:access|refresh|auth|session|jwt)[_-]?token)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)((?:access|refresh|auth|session|jwt)[_-]?token)[\"'\\s]*[:=][\"'\\s]*([^\"'\\s,;}&]+)"),
                     "$1=***REDACTED***"
             ),
             // JSON tokens
             new SanitizationRule(
                     "json-token",
-                    Pattern.compile("(?i)(\"(?:access|refresh|auth|session|jwt)[_-]?token\"\\s*:\\s*)\"[^\"]*\"", Pattern.CASE_INSENSITIVE),
+                    Pattern.compile("(?i)(\"(?:access|refresh|auth|session|jwt)[_-]?token\"\\s*:\\s*)\"[^\"]*\""),
                     "$1\"***REDACTED***\""
             ),
             // Credit card numbers (basic detection - 13-19 digits with optional separators)
@@ -107,6 +107,10 @@ public class LogSanitizer {
                     "***PRIVATE_KEY_REDACTED***"
             )
     );
+
+    // Pre-compiled fallback pattern for credit card detection
+    // Uses find() instead of matches() to avoid quadratic backtracking with .* anchors
+    private static final Pattern CREDIT_CARD_QUICK_CHECK = Pattern.compile("\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{1,7}");
 
     // Quick check patterns to avoid full regex scan on clean messages
     private static final List<String> QUICK_CHECK_KEYWORDS = List.of(
@@ -165,7 +169,7 @@ public class LogSanitizer {
 
         // Also check for patterns that look like credit cards or keys
         if (!potentiallySensitive) {
-            potentiallySensitive = message.matches(".*\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{1,7}.*");
+            potentiallySensitive = CREDIT_CARD_QUICK_CHECK.matcher(message).find();
         }
 
         if (!potentiallySensitive) {

@@ -21,6 +21,8 @@ public final class InputSanitizer {
     // Trace IDs can be: OpenTelemetry (32 hex), W3C (hex with dashes), or custom (alphanumeric with dashes/underscores)
     private static final Pattern TRACE_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
     private static final Pattern SAFE_STRING_PATTERN = Pattern.compile("^[\\w\\s.\\-_@/:,()\\[\\]{}]+$");
+    private static final Pattern LOGGER_NAME_PATTERN_FULL = Pattern.compile("^[a-zA-Z_$][a-zA-Z0-9_$.]*$");
+    private static final Pattern CONSECUTIVE_WILDCARDS = Pattern.compile("\\*{2,}");
 
     private InputSanitizer() {
         // Utility class
@@ -149,7 +151,7 @@ public final class InputSanitizer {
             return false;
         }
         // Logger names should be like: com.example.MyClass or simple names
-        return logger.matches("^[a-zA-Z_$][a-zA-Z0-9_$.]*$");
+        return LOGGER_NAME_PATTERN_FULL.matcher(logger).matches();
     }
 
     /**
@@ -201,7 +203,7 @@ public final class InputSanitizer {
             return input;
         }
         // Replace 2+ consecutive wildcards with a single one
-        return input.replaceAll("\\*{2,}", "*");
+        return CONSECUTIVE_WILDCARDS.matcher(input).replaceAll("*");
     }
 
     /**

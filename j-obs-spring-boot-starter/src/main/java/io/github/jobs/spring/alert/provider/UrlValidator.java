@@ -75,6 +75,9 @@ public final class UrlValidator {
             "outlook.webhook.office.com"
     );
 
+    private static final Pattern IPV4_PATTERN = Pattern.compile("^\\d{1,3}(\\.\\d{1,3}){3}$");
+    private static final Pattern IPV6_CHARS_PATTERN = Pattern.compile("^[0-9a-fA-F:.]+$");
+
     private UrlValidator() {
         // Utility class
     }
@@ -201,13 +204,12 @@ public final class UrlValidator {
      */
     private static boolean isNumericIpFormat(String host) {
         // IPv4: digits and dots only
-        if (host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$")) {
+        if (IPV4_PATTERN.matcher(host).matches()) {
             return true;
         }
         // IPv6: contains colon (simplified check)
         if (host.contains(":")) {
-            // Valid IPv6 chars: hex digits, colons, and dots (for IPv4-mapped)
-            return host.matches("^[0-9a-fA-F:.]+$");
+            return IPV6_CHARS_PATTERN.matcher(host).matches();
         }
         return false;
     }

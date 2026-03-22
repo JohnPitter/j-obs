@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "j-obs", name = "enabled", havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(JObsProperties.class)
 public class JObsServiceMapAutoConfiguration {
 
     @Bean
@@ -35,8 +37,8 @@ public class JObsServiceMapAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ServiceMapBuilder.class)
-    public ServiceMapController serviceMapController() {
-        return new ServiceMapController();
+    public ServiceMapController serviceMapController(JObsProperties properties) {
+        return new ServiceMapController(properties);
     }
 
     @Bean

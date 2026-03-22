@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.25] - 2026-03-22
+
+### Added
+- **82 E2E tests** covering all J-Obs API endpoints and functional areas:
+  - Dashboard pages (14 tests) - All HTML pages accessibility
+  - Requirements API (4 tests) - Dependency checking, status, capabilities
+  - Logs API (5 tests) - Query, filtering, stats, levels
+  - Traces API (4 tests) - Query, detail, not-found, stats
+  - Metrics API (4 tests) - Query, stats, JVM quick-stats
+  - Health API (4 tests) - Status, components, summary, refresh
+  - Alerts API (10 tests) - Full CRUD lifecycle, events, providers
+  - SLO API (7 tests) - CRUD, evaluation, summary
+  - Profiling API (10 tests) - CPU start/stop, memory, thread dump
+  - SQL Analyzer API (5 tests) - Analysis, issues, slow/top queries
+  - Service Map API (5 tests) - Map, nodes, connections, refresh
+  - Authentication (7 tests) - Basic auth, API key, session, exemptions
+  - WebSocket (3 tests) - Connection, handshake, log filtering
+
+### Fixed
+- **Timing oracle in credential validation** - `validateCredentials` now runs dummy PBKDF2 when username doesn't match, preventing timing-based username enumeration
+- **Non-atomic counter in CPU profiler** - `volatile long count++` replaced with `AtomicLong` in `DefaultProfilingService.SampleData`
+- **Lost stop future in profiling** - `stopFuture` now stored alongside `samplingFuture` so `cancelSession()` cancels both
+- **AuditLogger truncation bug** - Truncation now applied after regex replacement (was using pre-sanitized length)
+- **Regex backtracking in LogSanitizer** - Credit card pattern changed from `.*\d{4}....*` with `.matches()` to anchor-free pattern with `.find()`
+- **Hardcoded `/j-obs` in fallback HTML** - `AnomalyController` and `ServiceMapController` now use configurable `properties.getPath()`
+- **AnomalyController/ServiceMapController** converted from Thymeleaf views to `@ResponseBody` HTML (Thymeleaf not a dependency)
+- **Auto-configuration ordering** for alerts, profiling, SLO, and service-map controllers
+
+### Security
+- **API key cache stores SHA-256 hashes** instead of raw keys, with bounded size and TTL-based eviction (was unbounded, storing plaintext)
+- **PBKDF2 runs once per login** instead of per-user in the list (was running 310K-iteration hash for every configured user)
+
+### Changed
+- Precompiled 10+ regex patterns across `InputSanitizer`, `LogSanitizer`, `AuditLogger`, `UrlValidator`, `EmailAlertProvider` (were using `String.matches()`/`String.replaceAll()`)
+- `InMemoryTraceRepository.stats()` uses single-pass computation (was 4 separate iterations)
+- `SloScheduler.evaluateAll()` and `DefaultSqlAnalyzer.getStats()` use single-pass counting
+- `JObsLogAppender` extracts `SpanContext` once instead of twice per log event
+- `LogWebSocketHandler` caches lowercased `messageFilter` (was calling `toLowerCase()` per log entry)
+- `EmailAlertProvider` caches `SSLSocketFactory` as static field (was creating per email)
+- Removed unnecessary `secureCompare` wrapper methods in `PasswordEncoder` and `JObsAuthenticationFilter`
+- Removed unused `LinkedHashMap` copy in `AuditLogger`
+- Removed redundant `Pattern.CASE_INSENSITIVE` flags from `LogSanitizer` (patterns already use `(?i)`)
+
 ## [1.0.24] - 2026-02-04
 
 ### Security

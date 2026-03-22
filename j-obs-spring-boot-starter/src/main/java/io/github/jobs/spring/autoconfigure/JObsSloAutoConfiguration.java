@@ -5,6 +5,7 @@ import io.github.jobs.application.SloService;
 import io.github.jobs.infrastructure.InMemorySloRepository;
 import io.github.jobs.spring.slo.DefaultSloService;
 import io.github.jobs.spring.slo.SloScheduler;
+import io.github.jobs.spring.web.SloApiController;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,5 +54,12 @@ public class JObsSloAutoConfiguration {
         );
         scheduler.start();
         return scheduler;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(SloService.class)
+    public SloApiController sloApiController(SloService sloService) {
+        return new SloApiController(sloService);
     }
 }

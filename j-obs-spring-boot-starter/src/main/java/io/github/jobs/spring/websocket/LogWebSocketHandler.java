@@ -273,6 +273,7 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
         private LogLevel minLevel = LogLevel.INFO;
         private String loggerFilter;
         private String messageFilter;
+        private String messageFilterLower;
         private volatile boolean paused = false;
         private volatile Instant lastActivity;
 
@@ -305,8 +306,8 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
                     return false;
                 }
             }
-            if (messageFilter != null && !messageFilter.isEmpty()) {
-                if (!entry.message().toLowerCase().contains(messageFilter.toLowerCase())) {
+            if (messageFilterLower != null && !messageFilterLower.isEmpty()) {
+                if (!entry.message().toLowerCase().contains(messageFilterLower)) {
                     return false;
                 }
             }
@@ -343,6 +344,7 @@ public class LogWebSocketHandler extends TextWebSocketHandler {
 
         void setMessageFilter(String messageFilter) {
             this.messageFilter = messageFilter;
+            this.messageFilterLower = (messageFilter != null) ? messageFilter.toLowerCase() : null;
         }
 
         void setPaused(boolean paused) {
