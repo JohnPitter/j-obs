@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="J-Obs - Java Observability Dashboard for Spring Boot. Real-time traces, logs, metrics, health checks, alerts, and profiling.">
+    <meta name="keywords" content="java, spring boot, observability, traces, logs, metrics, opentelemetry, monitoring">
+    <meta name="author" content="J-Obs">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="J-Obs Dashboard">
+    <meta property="og:description" content="Complete observability for Spring Boot applications">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
     <title>Login - J-Obs Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -92,7 +100,7 @@
         html.light .text-gray-400 { color: #64748b; }
     </style>
 </head>
-<body class="bg-slate-950 text-gray-100 min-h-screen flex items-center justify-center p-4" x-data="loginApp()">
+<body class="bg-slate-950 text-gray-100 min-h-screen flex items-center justify-center p-4 fade-in" x-data="loginApp()">
     <div class="w-full max-w-md">
         <!-- Logo and Title -->
         <div class="text-center mb-8">
@@ -101,12 +109,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
             </div>
+            <img src="{{BASE_PATH}}/static/j-obs/favicon.svg" alt="J-Obs" class="w-8 h-8 mx-auto mb-2 logo-hover">
             <h1 class="text-3xl font-bold gradient-text">J-Obs Dashboard</h1>
             <p class="text-gray-400 mt-2">Sign in to access observability tools</p>
         </div>
 
         <!-- Login Form -->
-        <div class="glass-card rounded-2xl p-8 gradient-border">
+        <div class="glass-card rounded-2xl p-8 gradient-border scale-up">
             <!-- Error Alert -->
             <template x-if="showError">
                 <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">

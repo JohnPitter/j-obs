@@ -1,5 +1,5 @@
 <!-- Tools Page Content -->
-<div x-data="toolsPage()" x-init="init()">
+<div class="page-enter" x-data="toolsPage()" x-init="init()">
     <!-- Page Header -->
     <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
@@ -129,7 +129,7 @@
                     <!-- Dependency Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         <template x-for="service in serviceMap.services.filter(s => s.type !== 'application')" :key="service.id">
-                            <div class="p-4 rounded-xl border transition-all hover:scale-105 cursor-pointer bg-gradient-to-br"
+                            <div class="p-4 rounded-xl border transition-all hover:scale-105 cursor-pointer bg-gradient-to-br card-enter"
                                  :class="getServiceColor(service.type)">
                                 <div class="flex items-center gap-3 mb-3">
                                     <span class="text-2xl" x-text="getServiceIcon(service.type)"></span>
@@ -194,7 +194,7 @@
     <div x-show="activeTab === 'profiling'" x-transition>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- CPU Profiling -->
-            <div class="glass-card rounded-xl p-6">
+            <div class="glass-card rounded-xl p-6 card-enter">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center border border-orange-500/30">
                         <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,7 +260,7 @@
             </div>
 
             <!-- Memory Profiling -->
-            <div class="glass-card rounded-xl p-6">
+            <div class="glass-card rounded-xl p-6 card-enter">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
                         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

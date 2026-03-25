@@ -392,3 +392,277 @@
 .flame-cache { background: #a855f7; }
 .flame-queue { background: #eab308; }
 .flame-other { background: #64748b; }
+
+/* ========================================
+   PAGE TRANSITION & ENTRANCE ANIMATIONS
+   ======================================== */
+
+/* Page fade-in on load */
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-enter {
+    animation: pageEnter 0.4s ease-out both;
+}
+
+/* Staggered card entrance */
+@keyframes cardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card-enter {
+    animation: cardEnter 0.5s ease-out both;
+}
+
+.card-enter:nth-child(1) { animation-delay: 0.05s; }
+.card-enter:nth-child(2) { animation-delay: 0.10s; }
+.card-enter:nth-child(3) { animation-delay: 0.15s; }
+.card-enter:nth-child(4) { animation-delay: 0.20s; }
+.card-enter:nth-child(5) { animation-delay: 0.25s; }
+.card-enter:nth-child(6) { animation-delay: 0.30s; }
+.card-enter:nth-child(7) { animation-delay: 0.35s; }
+.card-enter:nth-child(8) { animation-delay: 0.40s; }
+
+/* Slide in from left (for sidebars, panels) */
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.4s ease-out both;
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.4s ease-out both;
+}
+
+/* Scale up (for modals, popovers) */
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.scale-up {
+    animation: scaleUp 0.3s ease-out both;
+}
+
+/* Fade in (generic) */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out both;
+}
+
+/* New log entry slide in */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.log-new {
+    animation: slideIn 0.2s ease-out;
+}
+
+/* Number counter animation (for stats) */
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.count-up {
+    animation: countUp 0.6s ease-out both;
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.05) 25%,
+        rgba(255,255,255,0.1) 50%,
+        rgba(255,255,255,0.05) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 0.375rem;
+}
+
+/* Glow pulse for live indicators */
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
+    50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.8); }
+}
+
+.glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Real-time update flash */
+@keyframes dataFlash {
+    0% { background-color: rgba(102, 126, 234, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.data-updated {
+    animation: dataFlash 0.8s ease-out;
+}
+
+/* Header logo bounce on hover */
+.logo-hover:hover {
+    animation: logoBounce 0.5s ease;
+}
+
+@keyframes logoBounce {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(1.1); }
+    60% { transform: scale(0.95); }
+}
+
+/* Smooth content swap (for HTMX/Alpine transitions) */
+.content-swap-enter {
+    animation: pageEnter 0.3s ease-out both;
+}
+
+.content-swap-leave {
+    animation: fadeIn 0.15s ease-in both reverse;
+}
+
+/* Table row hover animation */
+.data-table tr {
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.data-table tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateX(2px);
+}
+
+/* Chart container entrance */
+@keyframes chartReveal {
+    from { opacity: 0; clip-path: inset(0 100% 0 0); }
+    to { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+.chart-enter {
+    animation: chartReveal 0.8s ease-out both;
+    animation-delay: 0.3s;
+}
+
+/* Smooth refresh indicator */
+@keyframes refreshSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.refreshing svg {
+    animation: refreshSpin 1s linear infinite;
+}
+
+/* Toast notification */
+@keyframes toastEnter {
+    from { opacity: 0; transform: translateY(-100%) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastExit {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-100%); }
+}
+
+.toast-enter {
+    animation: toastEnter 0.3s ease-out both;
+}
+
+.toast-exit {
+    animation: toastExit 0.2s ease-in both;
+}
+
+/* Live indicator with ripple */
+@keyframes ripple {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+.live-indicator::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: ripple 1.5s ease-out infinite;
+}
+
+/* Light mode adjustments for animations */
+html.light .skeleton {
+    background: linear-gradient(90deg,
+        rgba(0,0,0,0.05) 25%,
+        rgba(0,0,0,0.08) 50%,
+        rgba(0,0,0,0.05) 75%
+    );
+    background-size: 200% 100%;
+}
+
+html.light .data-updated {
+    animation-name: dataFlashLight;
+}
+
+@keyframes dataFlashLight {
+    0% { background-color: rgba(102, 126, 234, 0.15); }
+    100% { background-color: transparent; }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .page-enter,
+    .card-enter,
+    .slide-in-left,
+    .slide-in-right,
+    .scale-up,
+    .fade-in,
+    .log-new,
+    .count-up,
+    .chart-enter,
+    .toast-enter,
+    .toast-exit {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+    }
+
+    .skeleton {
+        animation: none;
+    }
+
+    .pulse-dot,
+    .pulse-ring,
+    .glow-pulse {
+        animation: none;
+    }
+}

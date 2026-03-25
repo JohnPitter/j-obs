@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="J-Obs - Java Observability Dashboard for Spring Boot. Real-time traces, logs, metrics, health checks, alerts, and profiling.">
+    <meta name="keywords" content="java, spring boot, observability, traces, logs, metrics, opentelemetry, monitoring">
+    <meta name="author" content="J-Obs">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="J-Obs Dashboard">
+    <meta property="og:description" content="Complete observability for Spring Boot applications">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
     <title>J-Obs - Traces</title>
     <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -118,6 +126,7 @@
         <!-- Header -->
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-4">
+                <img src="{{BASE_PATH}}/static/j-obs/favicon.svg" alt="J-Obs" class="w-6 h-6 logo-hover">
                 <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
             </div>
             <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
@@ -137,7 +146,7 @@
         </header>
 
         <!-- Filters -->
-        <div class="glass-card rounded-xl p-4 mb-6">
+        <div class="glass-card rounded-xl p-4 mb-6 page-enter">
             <div class="flex gap-4 flex-wrap items-end">
                 <div>
                     <label class="block text-sm text-slate-400 font-medium mb-1.5">Service</label>
@@ -176,7 +185,7 @@
 
         <!-- Stats -->
         <div class="grid grid-cols-4 gap-4 mb-6">
-            <div class="glass-card gradient-border p-5 rounded-xl">
+            <div class="glass-card card-enter gradient-border p-5 rounded-xl">
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
                         <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,9 +194,9 @@
                     </div>
                     <span class="text-slate-400 text-sm font-medium">Total Traces</span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100" x-text="stats.totalTraces">--</div>
+                <div class="text-2xl font-bold text-slate-100 count-up" x-text="stats.totalTraces">--</div>
             </div>
-            <div class="glass-card gradient-border p-5 rounded-xl">
+            <div class="glass-card card-enter gradient-border p-5 rounded-xl">
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center">
                         <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,10 +205,10 @@
                     </div>
                     <span class="text-slate-400 text-sm font-medium">Error Rate</span>
                 </div>
-                <div class="text-2xl font-bold" :class="stats.errorRate > 5 ? 'text-red-400' : 'text-green-400'"
+                <div class="text-2xl font-bold count-up" :class="stats.errorRate > 5 ? 'text-red-400' : 'text-green-400'"
                      x-text="stats.errorRate.toFixed(1) + '%'">--</div>
             </div>
-            <div class="glass-card gradient-border p-5 rounded-xl">
+            <div class="glass-card card-enter gradient-border p-5 rounded-xl">
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
                         <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,9 +217,9 @@
                     </div>
                     <span class="text-slate-400 text-sm font-medium">Avg Duration</span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100 font-mono" x-text="stats.avgDurationMs.toFixed(0) + 'ms'">--</div>
+                <div class="text-2xl font-bold text-slate-100 font-mono count-up" x-text="stats.avgDurationMs.toFixed(0) + 'ms'">--</div>
             </div>
-            <div class="glass-card gradient-border p-5 rounded-xl">
+            <div class="glass-card card-enter gradient-border p-5 rounded-xl">
                 <div class="flex items-center gap-2 mb-2">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
                         <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +228,7 @@
                     </div>
                     <span class="text-slate-400 text-sm font-medium">P99 Duration</span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100 font-mono" x-text="stats.p99DurationMs.toFixed(0) + 'ms'">--</div>
+                <div class="text-2xl font-bold text-slate-100 font-mono count-up" x-text="stats.p99DurationMs.toFixed(0) + 'ms'">--</div>
             </div>
         </div>
 

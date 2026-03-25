@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="J-Obs - Java Observability Dashboard for Spring Boot. Real-time traces, logs, metrics, health checks, alerts, and profiling.">
+    <meta name="keywords" content="java, spring boot, observability, traces, logs, metrics, opentelemetry, monitoring">
+    <meta name="author" content="J-Obs">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="J-Obs Dashboard">
+    <meta property="og:description" content="Complete observability for Spring Boot applications">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
     <title>J-Obs - Trace {{TRACE_ID_SHORT}}</title>
     <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -84,6 +92,7 @@
         <!-- Header -->
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-4">
+                <img src="{{BASE_PATH}}/static/j-obs/favicon.svg" alt="J-Obs" class="w-6 h-6 logo-hover">
                 <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
             </div>
             <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
@@ -141,7 +150,7 @@
         </div>
 
         <!-- Trace Summary -->
-        <div class="glass-card rounded-xl p-6 mb-6">
+        <div class="glass-card rounded-xl p-6 mb-6 page-enter">
             <div class="flex items-center gap-4 mb-5">
                 <h2 class="text-xl font-semibold text-slate-100" x-text="trace.name">Loading...</h2>
                 <span class="px-3 py-1 rounded-lg text-xs font-semibold"
@@ -149,21 +158,21 @@
                       x-text="trace.hasError ? 'Error' : 'OK'"></span>
             </div>
             <div class="grid grid-cols-4 gap-6 text-sm">
-                <div class="bg-slate-800/50 rounded-lg p-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 card-enter">
                     <span class="text-slate-500 text-xs font-medium block mb-1">Trace ID</span>
                     <span class="font-mono text-slate-200 text-xs" x-text="trace.traceId"></span>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 card-enter">
                     <span class="text-slate-500 text-xs font-medium block mb-1">Service</span>
                     <span class="text-slate-200" x-text="trace.serviceName"></span>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 card-enter">
                     <span class="text-slate-500 text-xs font-medium block mb-1">Duration</span>
-                    <span class="font-mono text-slate-200" x-text="trace.durationMs + 'ms'"></span>
+                    <span class="font-mono text-slate-200 count-up" x-text="trace.durationMs + 'ms'"></span>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 card-enter">
                     <span class="text-slate-500 text-xs font-medium block mb-1">Spans</span>
-                    <span class="text-slate-200" x-text="trace.spanCount"></span>
+                    <span class="text-slate-200 count-up" x-text="trace.spanCount"></span>
                 </div>
             </div>
         </div>

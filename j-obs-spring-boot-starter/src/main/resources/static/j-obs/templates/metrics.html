@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="J-Obs - Java Observability Dashboard for Spring Boot. Real-time traces, logs, metrics, health checks, alerts, and profiling.">
+    <meta name="keywords" content="java, spring boot, observability, traces, logs, metrics, opentelemetry, monitoring">
+    <meta name="author" content="J-Obs">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="J-Obs Dashboard">
+    <meta property="og:description" content="Complete observability for Spring Boot applications">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
     <title>J-Obs - Metrics</title>
     <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -104,10 +112,11 @@
     <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10"></div>
     <div class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L2c+PC9zdmc+')] opacity-40 -z-10"></div>
 
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="container mx-auto px-4 py-8 max-w-7xl page-enter">
         <!-- Header -->
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-4">
+                <img src="{{BASE_PATH}}/static/j-obs/favicon.svg" alt="J-Obs" class="w-6 h-6 logo-hover">
                 <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
             </div>
             <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
@@ -273,29 +282,29 @@
                 <h2 class="text-lg font-semibold text-slate-100">System Overview</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">JVM Memory Used</p>
-                    <p class="text-lg font-bold text-blue-400" x-text="quickStats.jvmMemoryUsed"></p>
+                    <p class="text-lg font-bold text-blue-400 count-up" x-text="quickStats.jvmMemoryUsed"></p>
                 </div>
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">JVM Memory Max</p>
-                    <p class="text-lg font-bold text-slate-300" x-text="quickStats.jvmMemoryMax"></p>
+                    <p class="text-lg font-bold text-slate-300 count-up" x-text="quickStats.jvmMemoryMax"></p>
                 </div>
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">Active Threads</p>
-                    <p class="text-lg font-bold text-green-400" x-text="quickStats.threads"></p>
+                    <p class="text-lg font-bold text-green-400 count-up" x-text="quickStats.threads"></p>
                 </div>
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">CPU Usage</p>
-                    <p class="text-lg font-bold text-purple-400" x-text="quickStats.cpuUsage"></p>
+                    <p class="text-lg font-bold text-purple-400 count-up" x-text="quickStats.cpuUsage"></p>
                 </div>
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">Uptime</p>
-                    <p class="text-lg font-bold text-orange-400" x-text="quickStats.uptime"></p>
+                    <p class="text-lg font-bold text-orange-400 count-up" x-text="quickStats.uptime"></p>
                 </div>
-                <div class="glass-card rounded-xl p-4">
+                <div class="glass-card card-enter rounded-xl p-4">
                     <p class="text-xs text-slate-500 font-medium mb-1">GC Count</p>
-                    <p class="text-lg font-bold text-slate-400" x-text="quickStats.gcCount"></p>
+                    <p class="text-lg font-bold text-slate-400 count-up" x-text="quickStats.gcCount"></p>
                 </div>
             </div>
         </div>
@@ -317,7 +326,7 @@
                 <!-- Category Metrics Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" x-show="!collapsedCategories[category]" x-transition>
                     <template x-for="metric in getMetricsByCategory(category)" :key="metric.id">
-                        <div class="metric-card glass-card rounded-xl p-4 cursor-pointer"
+                        <div class="metric-card card-enter glass-card rounded-xl p-4 cursor-pointer"
                              @click="showMetricDetail(metric)">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0">
@@ -388,7 +397,7 @@
                 </div>
 
                 <!-- Chart -->
-                <div class="mt-6 bg-slate-900/50 rounded-xl p-4">
+                <div class="mt-6 bg-slate-900/50 rounded-xl p-4 chart-enter">
                     <canvas id="metricChart" height="200"></canvas>
                 </div>
 

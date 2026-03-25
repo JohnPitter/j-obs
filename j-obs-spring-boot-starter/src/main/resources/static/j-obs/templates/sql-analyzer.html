@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="J-Obs - Java Observability Dashboard for Spring Boot. Real-time traces, logs, metrics, health checks, alerts, and profiling.">
+    <meta name="keywords" content="java, spring boot, observability, traces, logs, metrics, opentelemetry, monitoring">
+    <meta name="author" content="J-Obs">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="J-Obs Dashboard">
+    <meta property="og:description" content="Complete observability for Spring Boot applications">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
     <title>J-Obs - SQL Analyzer</title>
     <link rel="icon" type="image/svg+xml" href="{{BASE_PATH}}/static/j-obs/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,6 +72,7 @@
             <!-- Header -->
             <header class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-4">
+                    <img src="{{BASE_PATH}}/static/j-obs/favicon.svg" alt="J-Obs" class="w-6 h-6 logo-hover">
                     <h1 class="text-2xl font-bold gradient-text">J-Obs</h1>
                 </div>
                 <nav class="flex flex-wrap gap-1 p-1 bg-slate-800/50 rounded-xl backdrop-blur-sm">
@@ -92,8 +101,8 @@
             </header>
 
             <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div class="glass-card gradient-border rounded-xl p-5">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 page-enter">
+                <div class="glass-card gradient-border rounded-xl p-5 card-enter">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30">
                             <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +115,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-card gradient-border rounded-xl p-5">
+                <div class="glass-card gradient-border rounded-xl p-5 card-enter">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center border border-red-500/30">
                             <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,7 +128,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-card gradient-border rounded-xl p-5">
+                <div class="glass-card gradient-border rounded-xl p-5 card-enter">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center border border-amber-500/30">
                             <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +141,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-card gradient-border rounded-xl p-5">
+                <div class="glass-card gradient-border rounded-xl p-5 card-enter">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center border border-orange-500/30">
                             <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
