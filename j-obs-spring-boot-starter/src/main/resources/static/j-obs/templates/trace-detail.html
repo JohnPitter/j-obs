@@ -115,7 +115,7 @@
         </div>
 
         <!-- Error Alert Banner (shown when trace has errors) -->
-        <div x-show="trace.hasError && trace.errorSpans && trace.errorSpans.length > 0"
+        <div x-show="trace.hasError && trace.errorSpans?.length > 0"
              class="glass-card border-red-500/30 bg-red-950/30 rounded-xl p-5 mb-6">
             <div class="flex items-start gap-4">
                 <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
@@ -125,10 +125,10 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="text-red-300 font-semibold text-lg mb-3">
-                        <span x-text="trace.errorSpans.length"></span> Error(s) Detected in this Trace
+                        <span x-text="trace.errorSpans?.length || 0"></span> Error(s) Detected in this Trace
                     </h3>
                     <div class="space-y-2">
-                        <template x-for="errorSpan in trace.errorSpans" :key="errorSpan.spanId">
+                        <template x-for="errorSpan in (trace.errorSpans || [])" :key="errorSpan.spanId">
                             <div class="bg-red-950/50 border border-red-900/30 rounded-lg p-3 cursor-pointer hover:bg-red-900/40 transition-colors"
                                  @click="selectedSpan = errorSpan; document.querySelector('[data-span-id=\'' + errorSpan.spanId + '\']')?.scrollIntoView({behavior: 'smooth', block: 'center'})">
                                 <div class="flex items-center justify-between">
