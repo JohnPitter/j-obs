@@ -7,7 +7,7 @@
 
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-parent</artifactId>
-    <version>1.0.27</version>
+    <version>1.1.0</version>
     <packaging>pom</packaging>
 
     <name>J-Obs Parent</name>
@@ -51,6 +51,10 @@
         <module>j-obs-bom</module>
         <module>j-obs-core</module>
         <module>j-obs-spring-boot-starter</module>
+        <module>j-obs-starter-tracing</module>
+        <module>j-obs-starter-metrics</module>
+        <module>j-obs-starter-logging</module>
+        <module>j-obs-starter-profiling</module>
         <module>j-obs-benchmarks</module>
     </modules>
 
@@ -104,6 +108,31 @@
             <dependency>
                 <groupId>io.github.johnpitter</groupId>
                 <artifactId>j-obs-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-starter-tracing</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-starter-metrics</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-starter-logging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.johnpitter</groupId>
+                <artifactId>j-obs-starter-profiling</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

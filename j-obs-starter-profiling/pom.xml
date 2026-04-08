@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.johnpitter</groupId>
+        <artifactId>j-obs-parent</artifactId>
+        <version>1.1.0</version>
+    </parent>
+
+    <artifactId>j-obs-starter-profiling</artifactId>
+    <packaging>jar</packaging>
+
+    <name>J-Obs Starter Profiling</name>
+    <description>J-Obs starter for CPU and memory profiling — includes on-demand CPU sampling, heap snapshots, and thread dumps from the browser</description>
+
+    <dependencies>
+        <!-- J-Obs auto-configuration (all auto-configs, conditionally activated) -->
+        <dependency>
+            <groupId>io.github.johnpitter</groupId>
+            <artifactId>j-obs-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!--
+            Profiling uses JVM MXBeans (ThreadMXBean, MemoryMXBean, RuntimeMXBean)
+            which are part of the JDK — no additional dependencies required.
+
+            The profiling auto-configuration activates when j-obs.enabled=true (default).
+            Configure profiling options via:
+              j-obs.profiling.default-duration=60s
+              j-obs.profiling.max-duration=300s
+              j-obs.profiling.max-sessions=5
+        -->
+    </dependencies>
+</project>

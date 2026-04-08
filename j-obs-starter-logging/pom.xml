@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.johnpitter</groupId>
+        <artifactId>j-obs-parent</artifactId>
+        <version>1.1.0</version>
+    </parent>
+
+    <artifactId>j-obs-starter-logging</artifactId>
+    <packaging>jar</packaging>
+
+    <name>J-Obs Starter Logging</name>
+    <description>J-Obs starter for real-time log streaming — includes Logback capture, WebSocket streaming, level/logger filters, and trace correlation</description>
+
+    <dependencies>
+        <!-- J-Obs auto-configuration (all auto-configs, conditionally activated) -->
+        <dependency>
+            <groupId>io.github.johnpitter</groupId>
+            <artifactId>j-obs-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Logback (required for log capture) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <!-- WebSocket (required for real-time log streaming) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+    </dependencies>
+</project>

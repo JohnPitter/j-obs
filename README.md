@@ -147,54 +147,90 @@ sequenceDiagram
 
 ## Quick Start
 
-### 1. Add the dependency
+### Option A: All-in-one (everything included)
 
 ```xml
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.0.25</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
-### 2. Add required dependencies
+### Option B: Pick only what you need
+
+J-Obs offers **modular starters** so you can include only the features you need, reducing your dependency footprint:
 
 ```xml
-<!-- Required for metrics -->
+<!-- Distributed tracing only (OpenTelemetry) -->
 <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-actuator</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-registry-prometheus</artifactId>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-tracing</artifactId>
+    <version>1.1.0</version>
 </dependency>
 
-<!-- Optional: real-time log streaming -->
+<!-- Metrics dashboard only (Micrometer + Actuator) -->
 <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-websocket</artifactId>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-metrics</artifactId>
+    <version>1.1.0</version>
+</dependency>
+
+<!-- Real-time log streaming only (Logback + WebSocket) -->
+<dependency>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-logging</artifactId>
+    <version>1.1.0</version>
+</dependency>
+
+<!-- CPU/Memory profiling only (JVM MXBeans) -->
+<dependency>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-profiling</artifactId>
+    <version>1.1.0</version>
 </dependency>
 ```
 
-### 3. Configure
+You can combine multiple starters:
+
+```xml
+<!-- Tracing + Metrics (no logging or profiling) -->
+<dependency>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-tracing</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.johnpitter</groupId>
+    <artifactId>j-obs-starter-metrics</artifactId>
+    <version>1.1.0</version>
+</dependency>
+```
+
+### Starter Comparison
+
+| Starter | Dependencies Added | Features Enabled |
+|---|---|---|
+| `j-obs-spring-boot-starter` | All (OpenTelemetry, Micrometer, Logback, WebSocket, Actuator) | Everything |
+| `j-obs-starter-tracing` | OpenTelemetry API + SDK | Traces, waterfall timeline, span details, SQL analyzer, anomaly detection, service map |
+| `j-obs-starter-metrics` | Micrometer + Actuator | Metrics dashboard, latency percentiles, JVM stats, health monitoring, SLO/SLI |
+| `j-obs-starter-logging` | Logback + WebSocket | Real-time log streaming, level/logger filters, trace correlation |
+| `j-obs-starter-profiling` | None (uses JVM MXBeans) | CPU sampling, heap snapshots, thread dumps |
+
+> **Note:** All starters include the base dashboard UI. Features auto-activate based on classpath — only the sections for your chosen starters appear in the dashboard.
+
+### Configure
 
 ```yaml
 spring:
   application:
     name: my-app
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus,metrics
-
 j-obs:
   enabled: true
 ```
 
-### 4. Access the dashboard
+### Access the dashboard
 
 ```
 Application:  http://localhost:8080
@@ -375,18 +411,19 @@ public class OrderService {
 ```
 j-obs/
   pom.xml                              # Parent POM with dependency management
+  j-obs-bom/                           # Bill of Materials for version management
 
-  j-obs-core/                           # Domain models and interfaces
+  j-obs-core/                           # Domain models and interfaces (no framework deps)
     src/main/java/
       io/github/jobs/
         domain/                         # Entities (Trace, Span, LogEntry, Alert, SLO, ...)
         application/                    # Service interfaces (ports)
         infrastructure/                 # In-memory repositories
 
-  j-obs-spring-boot-starter/            # Auto-configuration + UI
+  j-obs-spring-boot-starter/            # All-in-one starter (auto-configuration + UI)
     src/main/java/
       io/github/jobs/spring/
-        autoconfigure/                  # Spring Boot auto-configuration classes
+        autoconfigure/                  # 25 Spring Boot auto-configuration classes
         web/                            # REST controllers + HTML page controllers
         websocket/                      # WebSocket log streaming handler
         security/                       # Auth, CSRF, rate limiting, encryption
@@ -399,7 +436,12 @@ j-obs/
         log/                            # Logback appender + log sanitization
     src/main/resources/
       static/j-obs/                     # Dashboard UI assets (HTML, CSS, JS)
-      META-INF/spring.factories         # Auto-configuration registration
+      META-INF/spring/                  # Auto-configuration registration
+
+  j-obs-starter-tracing/                # Modular: OpenTelemetry distributed tracing
+  j-obs-starter-metrics/                # Modular: Micrometer metrics + Actuator
+  j-obs-starter-logging/                # Modular: Logback + WebSocket log streaming
+  j-obs-starter-profiling/              # Modular: CPU/Memory/Thread profiling
 
   j-obs-sample/                         # Sample application with all features
   j-obs-benchmarks/                     # JMH performance benchmarks
@@ -447,7 +489,7 @@ All endpoints are served under `{j-obs.path}` (default: `/j-obs`).
 | 3.1.x | 17 | 1.11.x | Should work |
 | 2.x | — | — | Not supported |
 
-> **Tip:** Use `j-obs-bom` for version management. It only manages J-Obs module versions and won't conflict with Spring Boot's dependency management.
+> **Tip:** Use `j-obs-bom` for version management — it covers all starters (including modular ones) and won't conflict with Spring Boot's dependency management.
 
 ---
 
