@@ -6,6 +6,7 @@ import io.github.jobs.spring.anomaly.AnomalyDetectionConfig;
 import io.github.jobs.spring.anomaly.DefaultAnomalyDetector;
 import io.github.jobs.spring.web.AnomalyApiController;
 import io.github.jobs.spring.web.AnomalyController;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -53,8 +54,8 @@ public class JObsAnomalyDetectionAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AnomalyController anomalyController(JObsProperties properties) {
-        return new AnomalyController(properties);
+    public AnomalyController anomalyController(JObsProperties properties, TemplateService templateService) {
+        return new AnomalyController(properties, templateService);
     }
 
     @Bean

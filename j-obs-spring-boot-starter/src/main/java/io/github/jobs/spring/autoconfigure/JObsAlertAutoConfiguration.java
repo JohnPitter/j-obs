@@ -4,6 +4,7 @@ import io.github.jobs.application.AlertRepository;
 import io.github.jobs.infrastructure.InMemoryAlertRepository;
 import io.github.jobs.spring.web.AlertApiController;
 import io.github.jobs.spring.web.AlertController;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,8 +35,8 @@ public class JObsAlertAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AlertController alertController() {
-        return new AlertController(properties);
+    public AlertController alertController(TemplateService templateService) {
+        return new AlertController(properties, templateService);
     }
 
     @Bean

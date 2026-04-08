@@ -2,8 +2,8 @@ package io.github.jobs.spring.web;
 
 import io.github.jobs.application.TraceRepository;
 import io.github.jobs.domain.trace.Trace;
-import io.github.jobs.domain.trace.TraceQuery;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * Controller for trace HTML pages.
@@ -22,13 +21,15 @@ public class TraceController {
 
     private final TraceRepository traceRepository;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String tracesListHtml;
     private final String traceDetailHtml;
     private final String traceNotFoundHtml;
 
-    public TraceController(TraceRepository traceRepository, JObsProperties properties) {
+    public TraceController(TraceRepository traceRepository, JObsProperties properties, TemplateService templateService) {
         this.traceRepository = traceRepository;
         this.properties = properties;
+        this.templateService = templateService;
         this.tracesListHtml = loadResource("/static/j-obs/templates/traces-list.html");
         this.traceDetailHtml = loadResource("/static/j-obs/templates/trace-detail.html");
         this.traceNotFoundHtml = loadResource("/static/j-obs/templates/trace-not-found.html");
@@ -37,7 +38,7 @@ public class TraceController {
     @GetMapping("${j-obs.path:/j-obs}/traces")
     @ResponseBody
     public String tracesPage() {
-        return tracesListHtml.replace("{{BASE_PATH}}", properties.getPath());
+        return tracesListHtml.replace("{{BASE_PATH}}", templateService.fullPath());
     }
 
     private String loadResource(String path) {
@@ -80,7 +81,7 @@ public class TraceController {
     }
 
     private String renderTraceDetail(Trace trace) {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         return traceDetailHtml
                 .replace("{{BASE_PATH}}", basePath)
                 .replace("{{TRACE_ID}}", trace.traceId())
@@ -89,7 +90,7 @@ public class TraceController {
     }
 
     private String renderNotFound(String traceId) {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         String safeTraceId = InputSanitizer.sanitizeTraceId(traceId);
         if (safeTraceId == null) {
             safeTraceId = "(invalid)";

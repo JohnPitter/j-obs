@@ -2,11 +2,8 @@ package io.github.jobs.spring.autoconfigure;
 
 import io.github.jobs.application.DependencyChecker;
 import io.github.jobs.infrastructure.ClasspathDependencyChecker;
-import io.github.jobs.spring.web.CapabilitiesController;
-import io.github.jobs.spring.web.JObsApiController;
-import io.github.jobs.spring.web.JObsController;
-import io.github.jobs.spring.web.RateLimiter;
-import io.github.jobs.spring.web.RateLimitInterceptor;
+import io.github.jobs.spring.web.*;
+import io.github.jobs.spring.web.template.TemplateService;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -16,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -69,6 +67,12 @@ public class JObsAutoConfiguration implements WebMvcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
+    public TemplateService templateService(Environment environment) {
+        return new TemplateService(properties, environment);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public JObsPropertiesValidator jObsPropertiesValidator() {
         return new JObsPropertiesValidator(properties);
     }
@@ -81,8 +85,8 @@ public class JObsAutoConfiguration implements WebMvcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
-    public JObsController jObsController(DependencyChecker dependencyChecker) {
-        return new JObsController(dependencyChecker, properties);
+    public JObsController jObsController(DependencyChecker dependencyChecker, TemplateService templateService) {
+        return new JObsController(dependencyChecker, properties, templateService);
     }
 
     @Bean

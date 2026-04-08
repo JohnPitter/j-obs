@@ -5,6 +5,7 @@ import io.github.jobs.application.TraceRepository;
 import io.github.jobs.spring.servicemap.DefaultServiceMapBuilder;
 import io.github.jobs.spring.web.ServiceMapApiController;
 import io.github.jobs.spring.web.ServiceMapController;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -37,8 +38,8 @@ public class JObsServiceMapAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(ServiceMapBuilder.class)
-    public ServiceMapController serviceMapController(JObsProperties properties) {
-        return new ServiceMapController(properties);
+    public ServiceMapController serviceMapController(JObsProperties properties, TemplateService templateService) {
+        return new ServiceMapController(properties, templateService);
     }
 
     @Bean

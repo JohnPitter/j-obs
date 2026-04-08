@@ -1,8 +1,8 @@
 package io.github.jobs.spring.web;
 
 import io.github.jobs.application.LogRepository;
-import io.github.jobs.domain.log.LogLevel;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,18 +22,20 @@ public class LogController {
 
     private final LogRepository logRepository;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String logsHtml;
 
-    public LogController(LogRepository logRepository, JObsProperties properties) {
+    public LogController(LogRepository logRepository, JObsProperties properties, TemplateService templateService) {
         this.logRepository = logRepository;
         this.properties = properties;
+        this.templateService = templateService;
         this.logsHtml = loadResource("/static/j-obs/templates/logs.html");
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String logsPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         var stats = logRepository.stats();
 
         return logsHtml

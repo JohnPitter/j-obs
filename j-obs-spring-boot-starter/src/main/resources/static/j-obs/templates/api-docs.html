@@ -188,7 +188,7 @@
                         </span>
                     </button>
                     <a
-                        href="/swagger-ui/index.html"
+                        href="{{CONTEXT_PATH}}/swagger-ui/index.html"
                         target="_blank"
                         class="api-tab text-slate-400 hover:text-white"
                         title="Open in new tab"
@@ -206,13 +206,13 @@
                 <div class="rounded-xl overflow-hidden shadow-2xl border border-slate-700/50">
                     <iframe
                         x-show="activeTab === 'j-obs'"
-                        src="/swagger-ui/index.html?urls.primaryName=J-Obs%20Observability%20API"
+                        src="{{CONTEXT_PATH}}/swagger-ui/index.html?urls.primaryName=J-Obs%20Observability%20API"
                         class="swagger-frame"
                         title="J-Obs API Documentation"
                     ></iframe>
                     <iframe
                         x-show="activeTab === 'application'"
-                        src="/swagger-ui/index.html?urls.primaryName=Application%20API"
+                        src="{{CONTEXT_PATH}}/swagger-ui/index.html?urls.primaryName=Application%20API"
                         class="swagger-frame"
                         title="Application API Documentation"
                     ></iframe>
@@ -220,7 +220,7 @@
 
                 <!-- Quick links -->
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <a href="/v3/api-docs/j-obs" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
+                    <a href="{{CONTEXT_PATH}}/v3/api-docs/j-obs" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-indigo-500/20 rounded-lg">
                                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,11 +229,11 @@
                             </div>
                             <div>
                                 <h3 class="font-medium text-white group-hover:text-indigo-400 transition-colors">J-Obs OpenAPI Spec</h3>
-                                <p class="text-sm text-slate-400">/v3/api-docs/j-obs</p>
+                                <p class="text-sm text-slate-400">{{CONTEXT_PATH}}/v3/api-docs/j-obs</p>
                             </div>
                         </div>
                     </a>
-                    <a href="/v3/api-docs/application" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
+                    <a href="{{CONTEXT_PATH}}/v3/api-docs/application" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-green-500/20 rounded-lg">
                                 <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,11 +242,11 @@
                             </div>
                             <div>
                                 <h3 class="font-medium text-white group-hover:text-green-400 transition-colors">Application OpenAPI Spec</h3>
-                                <p class="text-sm text-slate-400">/v3/api-docs/application</p>
+                                <p class="text-sm text-slate-400">{{CONTEXT_PATH}}/v3/api-docs/application</p>
                             </div>
                         </div>
                     </a>
-                    <a href="/v3/api-docs" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
+                    <a href="{{CONTEXT_PATH}}/v3/api-docs" target="_blank" class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 transition-colors group card-enter">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-purple-500/20 rounded-lg">
                                 <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +255,7 @@
                             </div>
                             <div>
                                 <h3 class="font-medium text-white group-hover:text-purple-400 transition-colors">Combined OpenAPI Spec</h3>
-                                <p class="text-sm text-slate-400">/v3/api-docs</p>
+                                <p class="text-sm text-slate-400">{{CONTEXT_PATH}}/v3/api-docs</p>
                             </div>
                         </div>
                     </a>

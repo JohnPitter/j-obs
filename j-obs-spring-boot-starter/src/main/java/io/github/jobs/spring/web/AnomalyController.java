@@ -1,6 +1,7 @@
 package io.github.jobs.spring.web;
 
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,17 +20,19 @@ import java.nio.charset.StandardCharsets;
 public class AnomalyController {
 
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String anomaliesHtml;
 
-    public AnomalyController(JObsProperties properties) {
+    public AnomalyController(JObsProperties properties, TemplateService templateService) {
         this.properties = properties;
+        this.templateService = templateService;
         this.anomaliesHtml = loadResource("/templates/anomalies.html");
     }
 
     @GetMapping(value = "/anomalies", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String anomaliesPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         return anomaliesHtml
                 .replace("th:href=\"${basePath}\"", "href=\"" + basePath + "\"")
                 .replace("th:href=\"${basePath + ", "href=\"" + basePath)
@@ -66,6 +69,6 @@ public class AnomalyController {
                 </div>
             </body>
             </html>
-            """, properties.getPath());
+            """, templateService.fullPath());
     }
 }

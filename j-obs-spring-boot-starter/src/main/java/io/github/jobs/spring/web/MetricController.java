@@ -2,6 +2,7 @@ package io.github.jobs.spring.web;
 
 import io.github.jobs.application.MetricRepository;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,18 +22,20 @@ public class MetricController {
 
     private final MetricRepository metricRepository;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String metricsHtml;
 
-    public MetricController(MetricRepository metricRepository, JObsProperties properties) {
+    public MetricController(MetricRepository metricRepository, JObsProperties properties, TemplateService templateService) {
         this.metricRepository = metricRepository;
         this.properties = properties;
+        this.templateService = templateService;
         this.metricsHtml = loadResource("/static/j-obs/templates/metrics.html");
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String metricsPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         var stats = metricRepository.stats();
 
         return metricsHtml

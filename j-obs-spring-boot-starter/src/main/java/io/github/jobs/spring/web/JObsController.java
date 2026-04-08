@@ -3,8 +3,8 @@ package io.github.jobs.spring.web;
 import io.github.jobs.application.DependencyChecker;
 import io.github.jobs.domain.DependencyCheckResult;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -21,14 +21,16 @@ public class JObsController {
 
     private final DependencyChecker dependencyChecker;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String dashboardHtml;
     private final String requirementsHtml;
     private final String loginHtml;
     private final String apiDocsHtml;
 
-    public JObsController(DependencyChecker dependencyChecker, JObsProperties properties) {
+    public JObsController(DependencyChecker dependencyChecker, JObsProperties properties, TemplateService templateService) {
         this.dependencyChecker = dependencyChecker;
         this.properties = properties;
+        this.templateService = templateService;
         this.dashboardHtml = loadResource("/static/j-obs/index.html");
         this.requirementsHtml = loadResource("/static/j-obs/requirements.html");
         this.loginHtml = loadResource("/static/j-obs/login.html");
@@ -74,11 +76,13 @@ public class JObsController {
     }
 
     private String renderApiDocs() {
-        return apiDocsHtml.replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
+        return apiDocsHtml
+                .replace("{{BASE_PATH}}", escapeHtml(templateService.fullPath()))
+                .replace("{{CONTEXT_PATH}}", escapeHtml(templateService.getContextPath()));
     }
 
     private String renderLogin() {
-        return loginHtml.replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
+        return loginHtml.replace("{{BASE_PATH}}", escapeHtml(templateService.fullPath()));
     }
 
     private String renderDashboard(DependencyCheckResult result) {
@@ -87,7 +91,7 @@ public class JObsController {
                 .replace("{{FOUND_COUNT}}", String.valueOf(result.foundCount()))
                 .replace("{{TOTAL_COUNT}}", String.valueOf(result.totalCount()))
                 .replace("{{MISSING_OPTIONAL}}", String.valueOf(result.missingOptionalCount()))
-                .replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
+                .replace("{{BASE_PATH}}", escapeHtml(templateService.fullPath()));
     }
 
     private String renderRequirements(DependencyCheckResult result) {
@@ -154,7 +158,7 @@ public class JObsController {
                 .replace("{{MISSING_OPTIONAL_COUNT}}", String.valueOf(result.missingOptionalCount()))
                 .replace("{{STATUS_CLASS}}", result.isComplete() ? "text-green-500" : "text-red-500")
                 .replace("{{STATUS_TEXT}}", result.isComplete() ? "All requirements met" : result.missingRequiredCount() + " required dependencies missing")
-                .replace("{{BASE_PATH}}", escapeHtml(properties.getPath()));
+                .replace("{{BASE_PATH}}", escapeHtml(templateService.fullPath()));
     }
 
     private String loadResource(String path) {

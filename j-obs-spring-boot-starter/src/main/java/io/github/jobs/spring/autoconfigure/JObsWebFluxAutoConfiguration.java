@@ -5,6 +5,7 @@ import io.github.jobs.infrastructure.ClasspathDependencyChecker;
 import io.github.jobs.spring.web.JObsApiController;
 import io.github.jobs.spring.web.JObsController;
 import io.github.jobs.spring.web.RateLimiter;
+import io.github.jobs.spring.web.template.TemplateService;
 import io.github.jobs.spring.webflux.ReactiveRateLimitFilter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,8 +52,8 @@ public class JObsWebFluxAutoConfiguration implements WebFluxConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
-    public JObsController jObsController(DependencyChecker dependencyChecker) {
-        return new JObsController(dependencyChecker, properties);
+    public JObsController jObsController(DependencyChecker dependencyChecker, TemplateService templateService) {
+        return new JObsController(dependencyChecker, properties, templateService);
     }
 
     @Bean

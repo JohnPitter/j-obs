@@ -6,6 +6,7 @@ import io.github.jobs.spring.sql.DefaultSqlAnalyzer;
 import io.github.jobs.spring.sql.SqlAnalyzerConfig;
 import io.github.jobs.spring.web.SqlAnalyzerApiController;
 import io.github.jobs.spring.web.SqlAnalyzerController;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -46,8 +47,8 @@ public class JObsSqlAnalyzerAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SqlAnalyzerController sqlAnalyzerController(SqlAnalyzer sqlAnalyzer, JObsProperties properties) {
-        return new SqlAnalyzerController(sqlAnalyzer, properties);
+    public SqlAnalyzerController sqlAnalyzerController(SqlAnalyzer sqlAnalyzer, JObsProperties properties, TemplateService templateService) {
+        return new SqlAnalyzerController(sqlAnalyzer, properties, templateService);
     }
 
     @Bean
