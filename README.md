@@ -153,7 +153,7 @@ sequenceDiagram
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-spring-boot-starter</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -166,28 +166,28 @@ J-Obs offers **modular starters** so you can include only the features you need,
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-tracing</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 
 <!-- Metrics dashboard only (Micrometer + Actuator) -->
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-metrics</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 
 <!-- Real-time log streaming only (Logback + WebSocket) -->
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-logging</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 
 <!-- CPU/Memory profiling only (JVM MXBeans) -->
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-profiling</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -198,12 +198,12 @@ You can combine multiple starters:
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-tracing</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.johnpitter</groupId>
     <artifactId>j-obs-starter-metrics</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 

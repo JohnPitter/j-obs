@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-17
+
+### Added
+- **Context path awareness** — J-Obs UI now respects `server.servlet.context-path` and `spring.webflux.base-path`, so all dashboard links and asset URLs work correctly when the application is deployed under a non-root context (e.g. `/my-app/j-obs`). Previously all links hardcoded `/j-obs` and returned 404.
+- **`TemplateService.fullPath()` / `getContextPath()`** — single source of truth for path resolution across controllers, including a new `{{CONTEXT_PATH}}` placeholder used by the API Docs page for Swagger UI and OpenAPI spec links.
+- **WebFlux fallback** — when `server.servlet.context-path` is absent, `TemplateService` falls back to `spring.webflux.base-path`.
+- **`TemplateServiceTest`** — 8 JUnit tests covering servlet context-path, WebFlux base-path, trailing-slash normalization, and empty context-path scenarios.
+
+### Changed
+- `TemplateService` now precomputes `fullPath` at construction time (path resolution is immutable post-boot).
+- `AlertController` and `SqlAnalyzerController` aligned with the class-level `@RequestMapping` convention used by the other UI controllers.
+- The `templateService` bean definition moved from `JObsToolsAutoConfiguration` into the core `JObsAutoConfiguration` / `JObsWebFluxAutoConfiguration` so all controllers can depend on it.
+
+### Fixed
+- `JObsLogAutoConfigurationTest` now loads `JObsAutoConfiguration` in addition to `JObsLogAutoConfiguration`, since `LogController` depends on `TemplateService`.
+
 ## [1.0.25] - 2026-03-22
 
 ### Added
