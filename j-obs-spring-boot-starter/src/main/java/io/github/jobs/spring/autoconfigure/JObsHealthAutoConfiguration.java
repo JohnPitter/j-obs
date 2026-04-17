@@ -4,6 +4,7 @@ import io.github.jobs.application.HealthRepository;
 import io.github.jobs.spring.health.ActuatorHealthRepository;
 import io.github.jobs.spring.web.HealthApiController;
 import io.github.jobs.spring.web.HealthController;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.boot.actuate.autoconfigure.health.HealthEndpointAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -37,7 +38,7 @@ public class JObsHealthAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(HealthRepository.class)
-    public HealthController healthController(HealthRepository healthRepository, JObsProperties properties) {
-        return new HealthController(healthRepository, properties);
+    public HealthController healthController(HealthRepository healthRepository, JObsProperties properties, TemplateService templateService) {
+        return new HealthController(healthRepository, properties, templateService);
     }
 }

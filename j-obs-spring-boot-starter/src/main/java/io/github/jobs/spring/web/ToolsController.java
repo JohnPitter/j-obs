@@ -1,7 +1,6 @@
 package io.github.jobs.spring.web;
 
 import io.github.jobs.spring.autoconfigure.JObsProperties;
-import io.github.jobs.spring.web.template.TemplateContext;
 import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -37,7 +36,7 @@ public class ToolsController {
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String toolsPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         String css = templateService.getSharedCss();
 
         String content = toolsContent.replace("{{BASE_PATH}}", basePath);

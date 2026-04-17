@@ -3,12 +3,12 @@ package io.github.jobs.spring.web.template;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,13 +22,23 @@ public class TemplateService {
     private static final Logger log = LoggerFactory.getLogger(TemplateService.class);
     private static final String TEMPLATES_PATH = "/static/j-obs/templates/";
     private static final String CSS_PATH = "/static/j-obs/css/";
-
+    private final String contextPath;
     private final JObsProperties properties;
     private final Map<String, String> templateCache = new ConcurrentHashMap<>();
     private final Map<String, String> cssCache = new ConcurrentHashMap<>();
 
-    public TemplateService(JObsProperties properties) {
+    public TemplateService(JObsProperties properties, Environment environment) {
         this.properties = properties;
+        String cp = environment.getProperty("server.servlet.context-path", "");
+        this.contextPath = cp.endsWith("/") ? cp.substring(0, cp.length() - 1) : cp;
+    }
+
+    public String fullPath() {
+        return contextPath + properties.getPath();
+    }
+
+    public String getContextPath() {
+        return contextPath;
     }
 
     /**
@@ -36,7 +46,7 @@ public class TemplateService {
      */
     public TemplateContext.Builder context() {
         return TemplateContext.builder()
-                .put("basePath", properties.getPath());
+                .put("basePath", fullPath());
     }
 
     /**
@@ -84,7 +94,7 @@ public class TemplateService {
                 .replace("{{ACTIVE_NAV}}", activeNav)
                 .replace("{{CONTENT}}", content)
                 .replace("{{SHARED_CSS}}", getSharedCss())
-                .replace("{{BASE_PATH}}", properties.getPath());
+                .replace("{{BASE_PATH}}", fullPath());
     }
 
     private String loadTemplate(String templateName) {
@@ -125,7 +135,7 @@ public class TemplateService {
         }
 
         // Always replace basePath
-        result = result.replace("{{BASE_PATH}}", properties.getPath());
+        result = result.replace("{{BASE_PATH}}", fullPath());
 
         return result;
     }

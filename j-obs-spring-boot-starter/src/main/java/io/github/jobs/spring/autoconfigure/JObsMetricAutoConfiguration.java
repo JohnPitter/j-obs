@@ -5,6 +5,7 @@ import io.github.jobs.spring.metric.CachedMetricRepository;
 import io.github.jobs.spring.metric.MicrometerMetricRepository;
 import io.github.jobs.spring.web.MetricApiController;
 import io.github.jobs.spring.web.MetricController;
+import io.github.jobs.spring.web.template.TemplateService;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -46,8 +47,8 @@ public class JObsMetricAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(MetricRepository.class)
-    public MetricController metricController(MetricRepository metricRepository, JObsProperties properties) {
-        return new MetricController(metricRepository, properties);
+    public MetricController metricController(MetricRepository metricRepository, JObsProperties properties, TemplateService templateService) {
+        return new MetricController(metricRepository, properties, templateService);
     }
 
     @Bean

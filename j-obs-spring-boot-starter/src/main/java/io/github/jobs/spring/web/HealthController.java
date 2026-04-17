@@ -3,6 +3,7 @@ package io.github.jobs.spring.web;
 import io.github.jobs.application.HealthRepository;
 import io.github.jobs.domain.health.HealthCheckResult;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,18 +23,20 @@ public class HealthController {
 
     private final HealthRepository healthRepository;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String healthHtml;
 
-    public HealthController(HealthRepository healthRepository, JObsProperties properties) {
+    public HealthController(HealthRepository healthRepository, JObsProperties properties, TemplateService templateService) {
         this.healthRepository = healthRepository;
         this.properties = properties;
+        this.templateService = templateService;
         this.healthHtml = loadResource("/static/j-obs/templates/health.html");
     }
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String healthPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         HealthCheckResult health = healthRepository.getHealth();
 
         return healthHtml

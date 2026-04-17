@@ -24,12 +24,6 @@ public class JObsToolsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public TemplateService templateService(JObsProperties properties) {
-        return new TemplateService(properties);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     @ConditionalOnBean(TemplateService.class)
     public ToolsController toolsController(JObsProperties properties, TemplateService templateService) {
         return new ToolsController(properties, templateService);

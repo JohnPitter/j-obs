@@ -8,6 +8,7 @@ import io.github.jobs.spring.log.JObsLogAppender;
 import io.github.jobs.spring.log.LogEntryFactory;
 import io.github.jobs.spring.web.LogApiController;
 import io.github.jobs.spring.web.LogController;
+import io.github.jobs.spring.web.template.TemplateService;
 import io.github.jobs.spring.websocket.LogWebSocketHandler;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -70,8 +71,8 @@ public class JObsLogAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public LogController logController(LogRepository logRepository) {
-        return new LogController(logRepository, properties);
+    public LogController logController(LogRepository logRepository, TemplateService templateService) {
+        return new LogController(logRepository, properties, templateService);
     }
 
     @Bean

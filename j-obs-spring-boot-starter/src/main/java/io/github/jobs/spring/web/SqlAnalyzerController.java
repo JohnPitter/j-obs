@@ -2,6 +2,7 @@ package io.github.jobs.spring.web;
 
 import io.github.jobs.application.SqlAnalyzer;
 import io.github.jobs.spring.autoconfigure.JObsProperties;
+import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,18 +20,20 @@ public class SqlAnalyzerController {
 
     private final SqlAnalyzer sqlAnalyzer;
     private final JObsProperties properties;
+    private final TemplateService templateService;
     private final String sqlAnalyzerHtml;
 
-    public SqlAnalyzerController(SqlAnalyzer sqlAnalyzer, JObsProperties properties) {
+    public SqlAnalyzerController(SqlAnalyzer sqlAnalyzer, JObsProperties properties, TemplateService templateService) {
         this.sqlAnalyzer = sqlAnalyzer;
         this.properties = properties;
+        this.templateService = templateService;
         this.sqlAnalyzerHtml = loadResource("/static/j-obs/templates/sql-analyzer.html");
     }
 
     @GetMapping(value = "${j-obs.path:/j-obs}/sql", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String sqlAnalyzerPage() {
-        String basePath = properties.getPath();
+        String basePath = templateService.fullPath();
         return sqlAnalyzerHtml.replace("{{BASE_PATH}}", basePath);
     }
 

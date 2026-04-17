@@ -7,6 +7,7 @@ import io.github.jobs.spring.trace.SamplingTraceRepository;
 import io.github.jobs.spring.trace.TraceSampler;
 import io.github.jobs.spring.web.TraceApiController;
 import io.github.jobs.spring.web.TraceController;
+import io.github.jobs.spring.web.template.TemplateService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -16,7 +17,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
-import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.slf4j.Logger;
@@ -107,8 +107,8 @@ public class JObsTraceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public TraceController traceController(TraceRepository traceRepository, JObsProperties properties) {
-        return new TraceController(traceRepository, properties);
+    public TraceController traceController(TraceRepository traceRepository, JObsProperties properties, TemplateService templateService) {
+        return new TraceController(traceRepository, properties, templateService);
     }
 
     @Bean
