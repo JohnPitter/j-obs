@@ -5,6 +5,7 @@ import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
  * Controller for alert management HTML pages.
  */
 @Controller
+@RequestMapping("${j-obs.path:/j-obs}/alerts")
 public class AlertController {
 
     private final JObsProperties properties;
@@ -27,7 +29,7 @@ public class AlertController {
         this.alertsHtml = loadResource("/static/j-obs/templates/alerts.html");
     }
 
-    @GetMapping(value = "${j-obs.path:/j-obs}/alerts", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String alertsPage() {
         String basePath = templateService.fullPath();

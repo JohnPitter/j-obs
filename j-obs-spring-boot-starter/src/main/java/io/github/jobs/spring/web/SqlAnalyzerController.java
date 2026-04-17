@@ -6,6 +6,7 @@ import io.github.jobs.spring.web.template.TemplateService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
  * Controller for SQL Analyzer HTML pages.
  */
 @Controller
+@RequestMapping("${j-obs.path:/j-obs}/sql")
 public class SqlAnalyzerController {
 
     private final SqlAnalyzer sqlAnalyzer;
@@ -30,7 +32,7 @@ public class SqlAnalyzerController {
         this.sqlAnalyzerHtml = loadResource("/static/j-obs/templates/sql-analyzer.html");
     }
 
-    @GetMapping(value = "${j-obs.path:/j-obs}/sql", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public String sqlAnalyzerPage() {
         String basePath = templateService.fullPath();
