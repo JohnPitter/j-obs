@@ -23,18 +23,19 @@ public class TemplateService {
     private static final String TEMPLATES_PATH = "/static/j-obs/templates/";
     private static final String CSS_PATH = "/static/j-obs/css/";
     private final String contextPath;
-    private final JObsProperties properties;
+    private final String fullPath;
     private final Map<String, String> templateCache = new ConcurrentHashMap<>();
     private final Map<String, String> cssCache = new ConcurrentHashMap<>();
 
     public TemplateService(JObsProperties properties, Environment environment) {
-        this.properties = properties;
-        String cp = environment.getProperty("server.servlet.context-path", "");
+        String cp = environment.getProperty("server.servlet.context-path",
+                environment.getProperty("spring.webflux.base-path", ""));
         this.contextPath = cp.endsWith("/") ? cp.substring(0, cp.length() - 1) : cp;
+        this.fullPath = this.contextPath + properties.getPath();
     }
 
     public String fullPath() {
-        return contextPath + properties.getPath();
+        return fullPath;
     }
 
     public String getContextPath() {

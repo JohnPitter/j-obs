@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JObsLogAutoConfigurationTest {
 
     private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(JObsLogAutoConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(JObsAutoConfiguration.class, JObsLogAutoConfiguration.class));
 
     @Test
     void shouldAutoConfigureLogRepositoryWhenEnabled() {
