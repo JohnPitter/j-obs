@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-06
+
+### Added
+- **Log4j2 appender (optional)** — `JObsLog4j2Appender` mirrors `JObsLogAppender` (Logback) and captures log events into the J-Obs log repository when applications use Log4j2 instead of Logback. Extracts `traceId`/`spanId` from MDC with fallback to the current OpenTelemetry `SpanContext`, applies `LogSanitizer` to message/MDC/stack trace, and skips J-Obs internal loggers to prevent circular logging.
+- **Auto-configuration `Log4j2Configuration`** — registers the Log4j2 appender bean and attaches it to the Log4j2 root logger. Activates when `org.apache.logging.log4j.core.appender.AbstractAppender` is on the classpath and Logback (`ch.qos.logback.classic.Logger`) is not. When Log4j2 is bridged to SLF4J, the bean is still created but the root-logger attach step is skipped (defensive `LoggerContext` instance check), so the appender doesn't crash on hybrid setups.
+- **Tests** — `JObsLogAutoConfigurationTest` now verifies that Logback wins when both frameworks are present, and that the Log4j2 appender activates when Logback is filtered out via `FilteredClassLoader`.
+
+### Changed
+- `j-obs-spring-boot-starter/pom.xml` declares `org.apache.logging.log4j:log4j-core` as an `<optional>true</optional>` dependency (version inherited from `spring-boot-dependencies` BOM, no transitive impact for users on Logback).
+
 ## [1.2.0] - 2026-04-17
 
 ### Added
