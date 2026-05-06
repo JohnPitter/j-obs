@@ -1,6 +1,8 @@
 package io.github.jobs.spring.autoconfigure;
 
 import io.github.jobs.application.LogRepository;
+import io.github.jobs.spring.log.JObsLog4j2Appender;
+import io.github.jobs.spring.log.JObsLogAppender;
 import io.github.jobs.spring.web.LogApiController;
 import io.github.jobs.spring.web.LogController;
 import io.github.jobs.spring.websocket.LogWebSocketHandler;
@@ -93,6 +95,33 @@ class JObsLogAutoConfigurationTest {
                     assertThat(context).hasSingleBean(JObsProperties.class);
                     JObsProperties props = context.getBean(JObsProperties.class);
                     assertThat(props.getLogs().getMaxEntries()).isEqualTo(5000);
+                });
+    }
+
+    /**
+     * When Logback is on the classpath (default Spring Boot setup), Logback takes priority.
+     * The Log4j2 appender must NOT be created, preventing duplicate log capture.
+     */
+    @Test
+    void shouldUseLogbackWhenBothLoggingFrameworksPresent() {
+        contextRunner.run(context -> {
+            assertThat(context).hasSingleBean(JObsLogAppender.class);
+            assertThat(context).doesNotHaveBean(JObsLog4j2Appender.class);
+        });
+    }
+
+    /**
+     * When Logback is absent, Log4j2 appender should activate automatically.
+     * Uses FilteredClassLoader to simulate a Log4j2-only environment.
+     */
+    @Test
+    void shouldUseLog4j2AppenderWhenLogbackAbsent() {
+        contextRunner
+                .withClassLoader(new FilteredClassLoader(ch.qos.logback.classic.Logger.class))
+                .run(context -> {
+                    assertThat(context).hasSingleBean(LogRepository.class);
+                    assertThat(context).hasSingleBean(JObsLog4j2Appender.class);
+                    assertThat(context).doesNotHaveBean(JObsLogAppender.class);
                 });
     }
 }

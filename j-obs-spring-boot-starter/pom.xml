@@ -119,6 +119,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!--Log4j (optional) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Note: Jaeger exporter was removed (deprecated).
              Use OTLP exporter instead - Jaeger natively supports OTLP protocol.
              Configure: j-obs.traces.export.otlp.endpoint=http://jaeger:4317 -->
